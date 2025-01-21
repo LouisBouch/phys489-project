@@ -8,10 +8,19 @@ cmake_minimum_required(VERSION 3.31.4)
 project(SIS)
 
 # Adds the main executable
-add_executable(${PROJECT_NAME} src/main/main.cpp)
+add_executable(${PROJECT_NAME}
+  src/main/Main.cpp
+  src/ui/frame/SFMLWindow.cpp
+  src/ui/frame/IWindow.cpp
+  src/ui/frame/SFMLRenderer.cpp
+  src/env/Environment.cpp
+  src/env/bodies/Polygon.cpp
+  src/env/bodies/Square.cpp
+)
 
 # Specify where the include and library directories are for SFML
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/../sfml3/source/include/)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include/)
 
 # Link to specific libraries depending on compile mode (release / debug)
 # Make it default to debug
