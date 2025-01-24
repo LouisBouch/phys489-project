@@ -1,18 +1,33 @@
 #include "env/bodies/Polygon.hpp"
 #include <cmath>
 #include <eigen3/Eigen/src/Core/Matrix.h>
+#include <iostream>
+#include <stdexcept>
+#include <string>
 
 ////////////////////////////////////////////////////////////
-env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices)
+env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
+                              double angV, Eigen::Vector2d velocity)
     : nbVertices(vertices.cols()), area(findArea(vertices)),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
-      rot(0), localVertices(findLocalVertices(vertices)) {}
+      rot(rot), angV(angV), velocity(velocity),
+      localVertices(findLocalVertices(vertices)),
+      convex(findConvexity(vertices)) {
+  // Requires at least 3 vertices for valid polygon.
+  if (nbVertices < 3) {
+    throw std::invalid_argument(
+        "Polygon must have a least 3 vertices, but got" +
+        std::to_string(nbVertices));
+  }
+  // TODO: Check for self-intersection and allow for clockwise polygons
+}
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
     : nbVertices(polygon.nbVertices), area(polygon.area),
       perimeter(polygon.perimeter), centroid(polygon.centroid),
-      rot(polygon.rot), localVertices(polygon.localVertices) {}
+      rot(polygon.rot), angV(polygon.angV), velocity(polygon.velocity),
+      localVertices(polygon.localVertices), convex(polygon.convex) {}
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::~Polygon() {}
@@ -109,3 +124,48 @@ env::bodies::Polygon::findLocalVertices(const Eigen::Matrix2Xd& vertices) {
 }
 ////////////////////////////////////////////////////////////
 double env::bodies::Polygon::getNbVertices() const { return nbVertices; }
+
+////////////////////////////////////////////////////////////
+const Eigen::Vector2d& env::bodies::Polygon::getVelocity() const {
+  return velocity;
+}
+
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getAngV() const { return angV; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::addVelocity(const Eigen::Vector2d& velocity) {
+  this->velocity[0] += velocity[0];
+  this->velocity[1] += velocity[1];
+}
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::addAngV(double angV) { this->angV += angV; }
+
+////////////////////////////////////////////////////////////
+bool env::bodies::Polygon::isConvex() const { return convex; }
+
+////////////////////////////////////////////////////////////
+bool env::bodies::Polygon::findConvexity(const Eigen::Matrix2Xd& vertices) {
+  double a = 0;
+  int nbCols = vertices.cols();
+  for (int v = 0; v < nbCols; v++) {
+    Eigen::Vector2d v1 =
+        vertices.col((v + 2) % nbCols) - vertices.col((v + 1) % nbCols);
+    Eigen::Vector2d v2 = vertices.col(v) - vertices.col((v + 1) % nbCols);
+    // Check for angle > 180 deg.
+    if (v1[0] * v2[1] - v2[0] * v1[1] < 0) {
+      std::cout << "concave" << "\n";
+      return false;
+    }
+  }
+  return true;
+}
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::addRot(double rot) { this->rot += rot; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::addPos(const Eigen::Vector2d& pos) {
+  centroid.noalias() += pos;
+}

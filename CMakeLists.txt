@@ -11,11 +11,12 @@ project(SIS)
 add_executable(${PROJECT_NAME}
   src/main/Main.cpp
   src/ui/frame/SFMLWindow.cpp
-  src/ui/frame/IWindow.cpp
   src/ui/frame/SFMLRenderer.cpp
   src/env/Environment.cpp
   src/env/bodies/Polygon.cpp
   src/env/bodies/Square.cpp
+  src/physics/PhysicsEngine.cpp
+  src/physics/integrator.cpp
 )
 
 # Specify where the include and library directories are for SFML

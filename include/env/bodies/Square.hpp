@@ -23,6 +23,8 @@ public:
    * @param w Width of the edges.
    * @param r Roration of the square (Radian).
    */
-  Square(Eigen::Vector2d centroid, double w = 1, double r = 0);
+  Square(Eigen::Vector2d centroid, double w = 1, double rot = 0,
+         double angV = 0,
+         const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0});
 };
 } // namespace env::bodies

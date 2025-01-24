@@ -20,31 +20,40 @@ public:
    *
    * @return The environment of the simulation.
    */
-  env::Environment& getEnv();
+  env::Environment* getEnv();
 
   /**
    * @brief Setter for environment.
    *
    * @param env The environment of the simulation.
    */
-  void setEnv(env::Environment& env);
+  void setEnv(env::Environment* env);
 
   /**
    * @brief Draw the environment.
    */
   void drawEnv();
 
-
   /**
    * @brief Sets the graphical context.
    *
-   * @param
+   * @param The Graphical context.
    */
   void setG2d(std::function<void(const sf::Shape&)> g2d);
+
+  /**
+   * @brief Sets the height of the window.
+   *
+   * @param The current height of the window. (In pixels)
+   */
+  void setWindowHeight(int windowHeight);
+
 private:
-  env::Environment env; //< Simulation content.
+  int windowHeight;      //< Height of window.
+  env::Environment* env; //< Simulation content.
   std::function<void(const sf::Shape&)>
-      g2d; //< Lambda function to draw on screen. Called on each shape in the environment.
+      g2d; //< Lambda function to draw on screen. Called on each shape in the
+           // environment.
 
   /**
    * @brief Draw shape.

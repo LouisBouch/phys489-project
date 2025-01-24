@@ -6,12 +6,11 @@ env::bodies::Square::Square()
     : Polygon(
           Eigen::MatrixXd{{0.5, 0.5}, {-0.5, 0.5}, {-0.5, -0.5}, {0.5, -0.5}}
               .transpose()) {}
-env::bodies::Square::Square(Eigen::Vector2d centroid, double w, double r)
+env::bodies::Square::Square(Eigen::Vector2d centroid, double w, double rot, double angV, Eigen::Vector2d velocity)
     : Polygon(Eigen::MatrixXd{{w / 2.0, w / 2.0},
                               {-w / 2.0, w / 2.0},
                               {-w / 2.0, -w / 2.0},
                               {w / 2.0, -w / 2.0}}
-                  .transpose()) {
-  rotate(r);
+                  .transpose(), rot, angV, velocity) {
   translate(centroid);
 }
