@@ -1,5 +1,6 @@
 #pragma once
-#include "SFML/Graphics/Shape.hpp"
+#include "SFML/Graphics/Color.hpp"
+#include "SFML/Graphics/Drawable.hpp"
 #include "env/Environment.hpp"
 #include "env/bodies/Polygon.hpp"
 
@@ -39,7 +40,7 @@ public:
    *
    * @param The Graphical context.
    */
-  void setG2d(std::function<void(const sf::Shape&)> g2d);
+  void setG2d(std::function<void(const sf::Drawable&)> g2d);
 
   /**
    * @brief Sets the height of the window.
@@ -51,13 +52,18 @@ public:
 private:
   int windowHeight;      //< Height of window.
   env::Environment* env; //< Simulation content.
-  std::function<void(const sf::Shape&)>
+  std::function<void(const sf::Drawable&)>
       g2d; //< Lambda function to draw on screen. Called on each shape in the
            // environment.
 
   /**
-   * @brief Draw shape.
+   * @brief Draws shape on screen with filled interior. Uses triangulation to ensure proper filling of concave polygons.
    */
-  void drawShape(const env::bodies::Polygon& p);
+  void fillShape(const Eigen::Matrix2Xd& vertices, sf::Color& color);
+
+  /**
+   * @brief Draws shape on screen with empty interior. TODO: Implement this? Use TriangleStrips using the points obtained through intersection of inside padded lines.
+   */
+  void drawOutline(const Eigen::Matrix2Xd& vertices, int lineThickness);
 };
 } // namespace ui::frame

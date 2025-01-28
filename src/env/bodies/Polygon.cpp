@@ -1,18 +1,22 @@
 #include "env/bodies/Polygon.hpp"
+#include "utils/geo/geoUtils.hpp"
 #include <cmath>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
+#include <list>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
                               double angV, Eigen::Vector2d velocity)
-    : nbVertices(vertices.cols()), area(findArea(vertices)),
+    : nbVertices(vertices.cols()), area(findArea(vertices)), colliding(false),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
       localVertices(findLocalVertices(vertices)),
-      convex(findConvexity(vertices)) {
+      convex(findConvexity(vertices)), triangulation(triangulate(vertices)),
+      globalVertices(vertices), lastRot(rot), lastCentroid(centroid) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -24,10 +28,8 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
-    : nbVertices(polygon.nbVertices), area(polygon.area),
-      perimeter(polygon.perimeter), centroid(polygon.centroid),
-      rot(polygon.rot), angV(polygon.angV), velocity(polygon.velocity),
-      localVertices(polygon.localVertices), convex(polygon.convex) {}
+    : Polygon(polygon.getGlobalVertices(), polygon.rot, polygon.angV,
+              polygon.velocity) {}
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::~Polygon() {}
@@ -55,6 +57,12 @@ const Eigen::Vector2d& env::bodies::Polygon::getCentroid() const {
 
 ////////////////////////////////////////////////////////////
 const Eigen::Matrix2Xd& env::bodies::Polygon::getGlobalVertices() const {
+  if (rot == lastRot && centroid == lastCentroid) {
+    return globalVertices;
+  }
+  // Update last values
+  lastRot = rot;
+  lastCentroid = centroid;
   // Create rotation matrix
   double cosr = std::cos(rot);
   double sinr = std::sin(rot);
@@ -68,10 +76,29 @@ const Eigen::Matrix2Xd& env::bodies::Polygon::getGlobalVertices() const {
 
   return globalVertices;
 }
+////////////////////////////////////////////////////////////
+Eigen::Matrix2Xd env::bodies::Polygon::getSeparationAxes() const {
+  // Make sure globalVertices are up to date
+  getGlobalVertices();
+  int nbCols = globalVertices.cols();
+  Eigen::Matrix2Xd separationAxes(2, nbCols);
+  for (int v = 0; v < nbCols; v++) {
+    Eigen::Vector2d edge =
+        globalVertices.col(v) - globalVertices.col((v + 1) % nbCols);
+    // Rotated 90 degree counterclockwise, so x contains -y, and y contains x.
+    separationAxes.col(v)[0] = -edge[1];
+    separationAxes.col(v)[1] = edge[0];
+  }
+  return separationAxes;
+}
 
 ////////////////////////////////////////////////////////////
 const Eigen::Matrix2Xd& env::bodies::Polygon::getLocalVertices() const {
   return localVertices;
+}
+////////////////////////////////////////////////////////////
+const Eigen::Matrix3Xd& env::bodies::Polygon::getTriangulation() const {
+  return triangulation;
 }
 
 ////////////////////////////////////////////////////////////
@@ -168,4 +195,79 @@ void env::bodies::Polygon::addRot(double rot) { this->rot += rot; }
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::addPos(const Eigen::Vector2d& pos) {
   centroid.noalias() += pos;
+}
+
+////////////////////////////////////////////////////////////
+bool env::bodies::Polygon::isColliding() const { return colliding; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setColliding(bool colliding) {
+  this->colliding = colliding;
+}
+
+////////////////////////////////////////////////////////////
+Eigen::Matrix3Xd
+env::bodies::Polygon::triangulate(const Eigen::Matrix2Xd& vertices) {
+  // Number of triangles found.
+  int trisFound = 0;
+  // List of current triangles in the triangulation.
+  Eigen::Matrix3Xd tris(3, nbVertices - 2);
+
+  // List of indices for each vertex in the polygon.
+  std::list<int> indices(nbVertices);
+  // Fill list with ascending numbers, starting at 0.
+  std::iota(indices.begin(), indices.end(), 0);
+
+  // Indices of the three points of a triangle.
+  int a;
+  int b;
+  int c;
+
+  // Triangle to be tested.
+  Eigen::Matrix2Xd ttemp(2, 3);
+
+  // Find triangles using ear clipping.
+  std::list<int>::iterator it = indices.begin();
+  while (trisFound != nbVertices - 2) {
+    // If at first element, take the last. Otherwise, take the previous one.
+    a = it == indices.begin() ? *std::prev(indices.end()) : *std::prev(it);
+    ttemp.col(0) = vertices.col(a);
+    b = *it;
+    ttemp.col(1) = vertices.col(b);
+    // If at last element, take the first. Otherwise, take the next one.
+    c = it == std::prev(indices.end()) ? *indices.begin() : *std::next(it);
+    ttemp.col(2) = vertices.col(c);
+
+    // Check if vertex is a valid triangle, i.e. the vertex is convex.
+    if (utils::geo::findParaArea(vertices.col(a), vertices.col(b), vertices.col(c)) < 0) {
+      // The vertex is concave, thus invalid for a polygon ear.
+      it++;
+      continue;
+    }
+
+    // Check if another point is contained in the triangle.
+    bool triValid = true;
+    for (auto tit = indices.begin(); tit != indices.end(); tit++) {
+      // Don't check for points that are part of the triangle
+      if (*tit == a || *tit == b || *tit == c) {
+        continue;
+      }
+      if (utils::geo::pointInPolygon(ttemp, vertices.col(*tit))) {
+        // There is another point in the triangle, so the vertex is invalid.
+        it++;
+        triValid = false;
+        break;
+      }
+    }
+    // If the triangle is valid, add it to the list.
+    if (triValid) {
+      tris.col(trisFound) << a, b, c;
+      trisFound++;
+      // Remove vertex.
+      indices.erase(it);
+      // Reset iterator.
+      it = indices.begin();
+    }
+  }
+  return tris;
 }

@@ -1,17 +1,22 @@
 #include "ui/frame/SFMLRenderer.hpp"
+#include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/ConvexShape.hpp"
+#include "SFML/Graphics/Drawable.hpp"
+#include "SFML/Graphics/PrimitiveType.hpp"
+#include "SFML/Graphics/VertexArray.hpp"
 #include "env/Environment.hpp"
+#include <eigen3/Eigen/src/Core/Matrix.h>
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLRenderer::SFMLRenderer()
-    : g2d([](const sf::Shape& s) {}), env(nullptr) {}
+    : g2d([](const sf::Drawable& s) {}), env(nullptr) {}
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLRenderer::~SFMLRenderer() {}
 
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLRenderer::setG2d(
-    std::function<void(const sf::Shape&)> g2d) {
+    std::function<void(const sf::Drawable&)> g2d) {
   this->g2d = g2d;
 }
 
@@ -22,25 +27,43 @@ void ui::frame::SFMLRenderer::drawEnv() {
     return;
   }
   std::vector<env::bodies::Polygon>& polygons = env->getPolygons();
-  // Iterate over polygons and draw them
+  // Iterate over polygons triangulation and draw them
+  Eigen::Matrix2Xd triVertices(2,3);
   for (env::bodies::Polygon& p : polygons) {
-    drawShape(p);
+    // Set color depending on collision status.
+    sf::Color col = p.isColliding() ? sf::Color(255, 0, 0) : sf::Color(0, 255, 0);
+    const Eigen::Matrix3Xd& tris = p.getTriangulation();
+    const Eigen::Matrix2Xd& gv = p.getGlobalVertices();
+    for (int tri = 0; tri < p.getNbVertices() - 2; tri++) {
+      // Indices of each vertex of the triangle.
+      int a = tris.col(tri)[0];
+      int b = tris.col(tri)[1];
+      int c = tris.col(tri)[2];
+      // Get real world vertices
+      triVertices.col(0) = gv.col(a);
+      triVertices.col(1) = gv.col(b);
+      triVertices.col(2) = gv.col(c);
+      // Draw triangle
+      fillShape(triVertices, col);
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////
-void ui::frame::SFMLRenderer::drawShape(const env::bodies::Polygon& p) {
+void ui::frame::SFMLRenderer::fillShape(const Eigen::Matrix2Xd& vertices,
+                                        sf::Color& color) {
   sf::ConvexShape s;
-  int nbVertices = p.getNbVertices();
-  s.setPointCount(nbVertices);
 
   // Place points on polygon
-  const Eigen::Matrix2Xd& globalVertices = p.getGlobalVertices();
+  int nbVertices = vertices.cols();
+  s.setPointCount(nbVertices);
   for (int v = 0; v < nbVertices; v++) {
-    s.setPoint(v, {(float)globalVertices.col(v)[0],
-                   (float)-globalVertices.col(v)[1] + windowHeight});
+    s.setPoint(v, {(float)vertices.col(v)[0],
+                   (float)-vertices.col(v)[1] + windowHeight});
   }
-  s.setFillColor(sf::Color(255, 255, 0));
+  s.setFillColor(color);
+  s.setOutlineColor(sf::Color(255, 255, 255));
+  s.setOutlineThickness(-1);
 
   // Draw shape
   g2d(s);

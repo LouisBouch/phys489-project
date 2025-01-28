@@ -1,4 +1,5 @@
 #include "physics/PhysicsEngine.hpp"
+#include "physics/collision/colDetection.hpp"
 #include "physics/integrator.hpp"
 #include <chrono>
 #include <iostream>
@@ -40,7 +41,10 @@ void physics::PhysicsEngine::simLoop() {
     }
     // Step Environment.
     stepEnvironment(*env, dt);
+
     // Detect collisions.
+    collision::findCollisions(*env);
+
     // Resolve collisions.
   }
 }

@@ -1,4 +1,5 @@
 #include "ui/frame/SFMLWindow.hpp"
+#include "SFML/Graphics/Drawable.hpp"
 #include "ui/frame/SFMLRenderer.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
@@ -32,7 +33,7 @@ void ui::frame::SFMLWindow::create(const std::string& title) {
   window.setFramerateLimit(60);
 
   // Setup renderer
-  renderer.setG2d([this](const sf::Shape& s) { window.draw(s); });
+  renderer.setG2d([this](const sf::Drawable& d) { window.draw(d); });
   renderer.setWindowHeight(window.getSize().y);
 }
 

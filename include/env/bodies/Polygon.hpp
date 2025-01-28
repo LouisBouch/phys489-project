@@ -1,7 +1,6 @@
 #pragma once
 
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 
 namespace env::bodies {
 class Polygon {
@@ -68,6 +67,14 @@ public:
    * @return Matrix of vertices of polygon in global coordinates.
    */
   const Eigen::Matrix2Xd& getGlobalVertices() const;
+
+  /**
+   * @brief Gets the separation axes of the polygon.
+   *
+   * @return Matrix containing separation axes.
+   */
+  Eigen::Matrix2Xd getSeparationAxes() const;
+
   /**
    * @brief Gets the vertices of the polygon in local coordinates (With respect
    * to centroid).
@@ -134,8 +141,31 @@ public:
    */
   bool isConvex() const;
 
+  /**
+   * @brief Gets collision state of polygon.
+   *
+   * @return Whether or not the polygon is in a collision.
+   */
+  bool isColliding() const;
+
+  /**
+   * @brief Gets collision state of polygon.
+   *
+   * @return Whether or not the polygon is in a collision.
+   */
+  void setColliding(bool colliding);
+
+  /**
+   * @brief Gets triangulation of polygon.
+   *
+   * @return Matrix containing the vertices of the triangles making up the
+   * triangulation. Each column contains the indices of a triangle.
+   */
+  const Eigen::Matrix3Xd& getTriangulation() const;
+
 private:
   bool convex;              //< True if convex polygon, false otherwise.
+  bool colliding;           //< True if the polygon is currently colliding.
   int nbVertices;           //< Number of vertices making up the polygon.
   double area;              //< Area of the polygon.
   double perimeter;         //< perimeter of the polygon.
@@ -148,8 +178,16 @@ private:
   Eigen::Vector2d velocity; //< Velocity of the centroid.
   Eigen::Matrix2Xd
       localVertices; //< Array of vertices with respect to centroid in
+  Eigen::Matrix3Xd
+      triangulation; //< Triangulation of the polygon. Each column represents
+                     // the counterclockwise vertex indices of a triangle.
   mutable Eigen::Matrix2Xd
       globalVertices; //< Array of vertices with respect to global coordinates
+  mutable Eigen::Vector2d
+      lastCentroid; //< Position of centroid after last call to
+                    // getGlobalVertices.
+  mutable double
+      lastRot; //< Rotation of centroid after last call to getGlobalVertices.
 
   /**
    * @brief Finds the centroid of the polygon.
@@ -159,6 +197,7 @@ private:
    * @return Location of the centroid.
    */
   Eigen::Vector2d findCentroid(const Eigen::Matrix2Xd& v);
+
   /**
    * @brief Finds the area of the polygon.
    *
@@ -167,6 +206,7 @@ private:
    * @return Area of the polygon.
    */
   double findArea(const Eigen::Matrix2Xd& vertices);
+
   /**
    * @brief Finds the perimeter of the polygon.
    *
@@ -175,6 +215,7 @@ private:
    * @return Perimeter of the polygon.
    */
   double findPerimeter(const Eigen::Matrix2Xd& vertices);
+
   /**
    * @brief Finds the local vertices from centroid and vertices.
    *
@@ -183,11 +224,19 @@ private:
    * @return Position of vertices realtive to centroid.
    */
   Eigen::Matrix2Xd findLocalVertices(const Eigen::Matrix2Xd& vertices);
+
   /**
    * @brief Determines whether polygon is convex or not.
    *
    * @return Convexity of polygon. (True if convex)
    */
   bool findConvexity(const Eigen::Matrix2Xd& vertices);
+
+  /**
+   * @brief Triangulates a polygon.
+   *
+   * @return List of indices representing the vertices of each triangle.
+   */
+  Eigen::Matrix3Xd triangulate(const Eigen::Matrix2Xd& vertices);
 };
 } // namespace env::bodies

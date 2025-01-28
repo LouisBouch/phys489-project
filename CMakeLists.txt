@@ -17,6 +17,8 @@ add_executable(${PROJECT_NAME}
   src/env/bodies/Square.cpp
   src/physics/PhysicsEngine.cpp
   src/physics/integrator.cpp
+  src/physics/collision/colDetection.cpp
+  src/utils/geo/geoUtils.cpp
 )
 
 # Specify where the include and library directories are for SFML
