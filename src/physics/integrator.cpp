@@ -5,6 +5,7 @@ void physics::stepEnvironment(env::Environment& env, double dt) {
   for (env::bodies::Polygon& p : env.getPolygons()) {
     stepPolygon(p, dt);
   }
+  env.unlockPolygons();
 }
 
 ////////////////////////////////////////////////////////////

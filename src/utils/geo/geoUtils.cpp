@@ -1,4 +1,12 @@
 #include "utils/geo/geoUtils.hpp"
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <iostream>
+#include <optional>
+
+#define EPSILON 1e-6
 
 ////////////////////////////////////////////////////////////
 double utils::geo::findParaArea(const Eigen::Vector2d& a,
@@ -9,9 +17,9 @@ double utils::geo::findParaArea(const Eigen::Vector2d& a,
 
 ////////////////////////////////////////////////////////////
 bool utils::geo::testSegments(const Eigen::Vector2d& a,
-                                      const Eigen::Vector2d& b,
-                                      const Eigen::Vector2d& c,
-                                      const Eigen::Vector2d& d) {
+                              const Eigen::Vector2d& b,
+                              const Eigen::Vector2d& c,
+                              const Eigen::Vector2d& d) {
   // Sign of areas correspond to which side of ab the points c and d appear.
   double a1 = utils::geo::findParaArea(a, b, d);
   double a2 = utils::geo::findParaArea(a, b, c);
@@ -46,7 +54,7 @@ bool utils::geo::testSegments(const Eigen::Vector2d& a,
 
 ////////////////////////////////////////////////////////////
 bool utils::geo::pointInPolygon(const Eigen::Matrix2Xd& vs,
-                                        const Eigen::Vector2d& point) {
+                                const Eigen::Vector2d& point) {
   bool inside = false;
   int nbV = vs.cols(); // Number of vertices in polygon.
   int curV = 0;        // Current vertex index.
@@ -67,4 +75,85 @@ bool utils::geo::pointInPolygon(const Eigen::Matrix2Xd& vs,
   }
   // If the ray crossed an odd number of edges, it must be inside the polygon.
   return inside;
+}
+////////////////////////////////////////////////////////////
+Eigen::Matrix2Xd utils::geo::rotatePoints(const Eigen::Matrix2Xd& ps,
+                                          double r) {
+  // Create rotation matrix
+  double cosr = std::cos(r);
+  double sinr = std::sin(r);
+  Eigen::Matrix2d rM{{cosr, -sinr}, {sinr, cosr}};
+  // Rotate point
+  return rM * ps;
+}
+////////////////////////////////////////////////////////////
+Eigen::Matrix2Xd utils::geo::projectPoints(const Eigen::Matrix2Xd& ps,
+                                           const Eigen::Vector2d& a) {
+  return a * (a.transpose() * ps / a.dot(a));
+}
+////////////////////////////////////////////////////////////
+Eigen::VectorXd utils::geo::projectPointsMagnitude(const Eigen::Matrix2Xd& ps,
+                                                   const Eigen::Vector2d& a) {
+  return a.transpose() * ps / a.norm();
+}
+////////////////////////////////////////////////////////////
+double utils::geo::findOverlap(const Eigen::VectorXd& ps1,
+                               const Eigen::VectorXd& ps2) {
+  double min1 = ps1.minCoeff();
+  double max1 = ps1.maxCoeff();
+
+  double min2 = ps2.minCoeff();
+  double max2 = ps2.maxCoeff();
+
+  double minMax = max1 < max2 ? max1 : max2;
+  double maxMin = min1 > min2 ? min1 : min2;
+  double overlap = minMax - maxMin;
+  // Equivalent to:
+  // std::max(0,std::min(max1, max2) - std::max(min1, min2));
+  return 0 > overlap ? 0 : overlap;
+}
+////////////////////////////////////////////////////////////
+int utils::geo::mostAligned(const Eigen::Vector2d& v1,
+                            const Eigen::Vector2d& v2,
+                            const Eigen::Vector2d& r) {
+  if (std::abs((v1.dot(v2) - v1.norm() * v2.norm())) - EPSILON < 0) {
+    // v1 and v2 are paralell
+    return 0;
+  }
+  double cosinet1 = std::abs(v1.dot(r) / (v1.norm() * r.norm()));
+  double cosinet2 = std::abs(v2.dot(r) / (v2.norm() * r.norm()));
+  // Arccos of these values would yield the serparation between the vectors.
+  // Given that arccos is monotonously decreasing, the greater cosinet will
+  // correspond to the most aligned vector.
+  return cosinet1 > cosinet2 ? 1 : -1;
+}
+////////////////////////////////////////////////////////////
+bool utils::geo::isAboveLine(const Eigen::Vector2d& p, const Eigen::Vector2d& n,
+                             const Eigen::Vector2d& pl) {
+  double projP = projectPointsMagnitude(p - pl, n)[0];
+  return projP >= 0;
+}
+
+////////////////////////////////////////////////////////////
+bool utils::geo::segCrossesLine(const Eigen::Vector2d& p1,
+                                const Eigen::Vector2d& p2,
+                                const Eigen::Vector2d& n,
+                                const Eigen::Vector2d& pl) {
+  double d1 = projectPointsMagnitude(p1 - pl, n)[0];
+  double d2 = projectPointsMagnitude(p2 - pl, n)[0];
+  return d1 * d2 < 0;
+}
+
+////////////////////////////////////////////////////////////
+std::optional<Eigen::Vector2d>
+utils::geo::interSegLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
+                         const Eigen::Vector2d& n, const Eigen::Vector2d& pl) {
+  // Check if there is an intersection
+  if (!segCrossesLine(p1, p2, n, pl)) {
+    return std::nullopt;
+  }
+  // Point can be defined as P = p1 + t * (p2 - p1)
+  // Where t can be found to be:
+  double t = n.dot(pl - p1) / n.dot(p2 - p1);
+  return p1 + t * (p2 - p1);
 }

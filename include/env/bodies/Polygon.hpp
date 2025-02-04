@@ -40,6 +40,13 @@ public:
   void rotate(double r);
 
   /**
+   * @brief Obtains current rotation of polygon.
+   *
+   * @return Rotation angle (Radian).
+   */
+  double getRotation() const;
+
+  /**
    * @brief Gets the area of the polygon.
    *
    * @return Area of the polygon.
@@ -88,7 +95,7 @@ public:
    *
    * @return Number of vertices.
    */
-  double getNbVertices() const;
+  int getNbVertices() const;
 
   /**
    * @brief Gets current centroid velocity.
@@ -161,7 +168,7 @@ public:
    * @return Matrix containing the vertices of the triangles making up the
    * triangulation. Each column contains the indices of a triangle.
    */
-  const Eigen::Matrix3Xd& getTriangulation() const;
+  const Eigen::Matrix3Xi& getTriangulation() const;
 
 private:
   bool convex;              //< True if convex polygon, false otherwise.
@@ -176,9 +183,9 @@ private:
                             // | x1, x2, ...|
                             // | y1, y2, ...|
   Eigen::Vector2d velocity; //< Velocity of the centroid.
-  Eigen::Matrix2Xd
-      localVertices; //< Array of vertices with respect to centroid in
-  Eigen::Matrix3Xd
+  const Eigen::Matrix2Xd
+      localVertices; //< Array of vertices with respect to centroid.
+  Eigen::Matrix3Xi
       triangulation; //< Triangulation of the polygon. Each column represents
                      // the counterclockwise vertex indices of a triangle.
   mutable Eigen::Matrix2Xd
@@ -237,6 +244,6 @@ private:
    *
    * @return List of indices representing the vertices of each triangle.
    */
-  Eigen::Matrix3Xd triangulate(const Eigen::Matrix2Xd& vertices);
+  Eigen::Matrix3Xi triangulate(const Eigen::Matrix2Xd& vertices);
 };
 } // namespace env::bodies

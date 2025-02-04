@@ -17,7 +17,8 @@ add_executable(${PROJECT_NAME}
   src/env/bodies/Square.cpp
   src/physics/PhysicsEngine.cpp
   src/physics/integrator.cpp
-  src/physics/collision/colDetection.cpp
+  src/physics/collision/ColDetector.cpp
+  src/physics/collision/Collision.cpp
   src/utils/geo/geoUtils.cpp
 )
 

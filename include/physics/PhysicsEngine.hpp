@@ -1,5 +1,6 @@
 #pragma once
 #include "env/Environment.hpp"
+#include "physics/collision/ColDetector.hpp"
 #include <thread>
 namespace physics {
 class PhysicsEngine {
@@ -62,9 +63,11 @@ public:
 
 private:
   env::Environment* env; //< Simulation content.
+  double slowdown; // Slows down time by the factor.
   bool running;          //< Whether the simulation is running or not.
   bool paused;           //< Whether the simulation is paused or not.
   std::thread simThread; //< Thread rendering the screen.
   double dt; //< Delta time with which the engine updates the environment. (In seconds)
+  physics::collision::ColDetector colDet; //< Used to detect collisions in the environment.
 };
 } // namespace physics

@@ -1,6 +1,7 @@
 #include "env/bodies/Polygon.hpp"
 #include "utils/geo/geoUtils.hpp"
 #include <cmath>
+#include <cstdlib>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <list>
@@ -16,7 +17,7 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       rot(rot), angV(angV), velocity(velocity),
       localVertices(findLocalVertices(vertices)),
       convex(findConvexity(vertices)), triangulation(triangulate(vertices)),
-      globalVertices(vertices), lastRot(rot), lastCentroid(centroid) {
+      globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -28,15 +29,17 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
-    : Polygon(polygon.getGlobalVertices(), polygon.rot, polygon.angV,
-              polygon.velocity) {}
+    : Polygon(polygon.getLocalVertices(), polygon.rot, polygon.angV,
+              polygon.velocity) {
+      translate(polygon.getCentroid());
+    }
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::~Polygon() {}
 
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::translate(const Eigen::Vector2d& t) {
-  centroid.noalias() += t;
+  centroid += t;
 }
 
 ////////////////////////////////////////////////////////////
@@ -97,7 +100,7 @@ const Eigen::Matrix2Xd& env::bodies::Polygon::getLocalVertices() const {
   return localVertices;
 }
 ////////////////////////////////////////////////////////////
-const Eigen::Matrix3Xd& env::bodies::Polygon::getTriangulation() const {
+const Eigen::Matrix3Xi& env::bodies::Polygon::getTriangulation() const {
   return triangulation;
 }
 
@@ -150,7 +153,7 @@ env::bodies::Polygon::findLocalVertices(const Eigen::Matrix2Xd& vertices) {
   return localV;
 }
 ////////////////////////////////////////////////////////////
-double env::bodies::Polygon::getNbVertices() const { return nbVertices; }
+int env::bodies::Polygon::getNbVertices() const { return nbVertices; }
 
 ////////////////////////////////////////////////////////////
 const Eigen::Vector2d& env::bodies::Polygon::getVelocity() const {
@@ -181,8 +184,13 @@ bool env::bodies::Polygon::findConvexity(const Eigen::Matrix2Xd& vertices) {
         vertices.col((v + 2) % nbCols) - vertices.col((v + 1) % nbCols);
     Eigen::Vector2d v2 = vertices.col(v) - vertices.col((v + 1) % nbCols);
     // Check for angle > 180 deg.
-    if (v1[0] * v2[1] - v2[0] * v1[1] < 0) {
+    double cross = v1[0] * v2[1] - v2[0] * v1[1];
+    if (cross < 0) {
       std::cout << "concave" << "\n";
+      return false;
+    }
+    if (std::abs(cross) - 1e-6 < 0) {
+      std::cout << "colinear, illegal!" << "\n";
       return false;
     }
   }
@@ -194,7 +202,7 @@ void env::bodies::Polygon::addRot(double rot) { this->rot += rot; }
 
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::addPos(const Eigen::Vector2d& pos) {
-  centroid.noalias() += pos;
+  centroid += pos;
 }
 
 ////////////////////////////////////////////////////////////
@@ -206,12 +214,12 @@ void env::bodies::Polygon::setColliding(bool colliding) {
 }
 
 ////////////////////////////////////////////////////////////
-Eigen::Matrix3Xd
+Eigen::Matrix3Xi
 env::bodies::Polygon::triangulate(const Eigen::Matrix2Xd& vertices) {
   // Number of triangles found.
   int trisFound = 0;
   // List of current triangles in the triangulation.
-  Eigen::Matrix3Xd tris(3, nbVertices - 2);
+  Eigen::Matrix3Xi tris(3, nbVertices - 2);
 
   // List of indices for each vertex in the polygon.
   std::list<int> indices(nbVertices);
@@ -239,7 +247,8 @@ env::bodies::Polygon::triangulate(const Eigen::Matrix2Xd& vertices) {
     ttemp.col(2) = vertices.col(c);
 
     // Check if vertex is a valid triangle, i.e. the vertex is convex.
-    if (utils::geo::findParaArea(vertices.col(a), vertices.col(b), vertices.col(c)) < 0) {
+    if (utils::geo::findParaArea(vertices.col(a), vertices.col(b),
+                                 vertices.col(c)) < 0) {
       // The vertex is concave, thus invalid for a polygon ear.
       it++;
       continue;
@@ -270,4 +279,8 @@ env::bodies::Polygon::triangulate(const Eigen::Matrix2Xd& vertices) {
     }
   }
   return tris;
+}
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getRotation() const {
+  return this->rot;
 }

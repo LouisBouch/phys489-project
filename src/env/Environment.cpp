@@ -4,7 +4,8 @@
 
 ////////////////////////////////////////////////////////////
 env::Environment::Environment()
-    : polygons(std::vector<bodies::Polygon>()), timeBuffer(0) {}
+    : polygons(std::vector<bodies::Polygon>()), timeBuffer(0),
+      collisions(nullptr) {}
 
 ////////////////////////////////////////////////////////////
 env::Environment::Environment(std::vector<bodies::Polygon> polygons)
@@ -24,7 +25,13 @@ void env::Environment::addPolygon(bodies::Polygon& polygon) {
 
 ////////////////////////////////////////////////////////////
 std::vector<env::bodies::Polygon>& env::Environment::getPolygons() {
+  polygons_m.lock();
   return polygons;
+}
+
+////////////////////////////////////////////////////////////
+void env::Environment::unlockPolygons() {
+  polygons_m.unlock();
 }
 
 ////////////////////////////////////////////////////////////
@@ -43,6 +50,14 @@ int_least64_t env::Environment::getTimeBuffer() { return timeBuffer.load(); }
 int_least64_t env::Environment::getTotalTime() { return totalTime; }
 
 ////////////////////////////////////////////////////////////
-void env::Environment::addToTotalTime(int_least64_t time) {
-  totalTime += time;
+void env::Environment::addToTotalTime(int_least64_t time) { totalTime += time; }
+////////////////////////////////////////////////////////////
+void env::Environment::setCollisionsP(
+    const std::vector<physics::collision::Collision>* cp) {
+  this->collisions = cp;
+}
+////////////////////////////////////////////////////////////
+const std::vector<physics::collision::Collision>*
+env::Environment::getCollisionsP() const {
+  return collisions;
 }

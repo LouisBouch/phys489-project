@@ -1,13 +1,16 @@
 #include "ui/frame/SFMLWindow.hpp"
 #include "SFML/Graphics/Drawable.hpp"
+#include "SFML/Window/Keyboard.hpp"
 #include "ui/frame/SFMLRenderer.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
 #include <iostream>
 #include <thread>
 
+#define FPS 60
+
 ////////////////////////////////////////////////////////////
-ui::frame::SFMLWindow::SFMLWindow() : running(false) {}
+ui::frame::SFMLWindow::SFMLWindow() : running(false), paused(false) {}
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLWindow::~SFMLWindow() {
@@ -30,7 +33,7 @@ void ui::frame::SFMLWindow::create(const std::string& title) {
   window.create(sf::VideoMode({mode.size.x - 100, mode.size.y - 150},
                               desktop.bitsPerPixel),
                 title, sf::Style::Default, sf::State::Windowed, settings);
-  window.setFramerateLimit(60);
+  window.setFramerateLimit(FPS);
 
   // Setup renderer
   renderer.setG2d([this](const sf::Drawable& d) { window.draw(d); });
@@ -70,7 +73,7 @@ void ui::frame::SFMLWindow::windowLoop() {
     int deltaTime = clock.restart().asSeconds() *
                     1e6; // Time since last render in microseconds.
     renderer.drawEnv();
-    if (renderer.getEnv()) {
+    if (!paused && renderer.getEnv()) {
       renderer.getEnv()->addToTimeBuffer(deltaTime);
     }
 
@@ -111,7 +114,13 @@ void ui::frame::SFMLWindow::handleEvents() {
     } else if (const auto* mousePressed =
                    event->getIf<sf::Event::MouseButtonPressed>()) {
       std::cout << "x: " << mousePressed->position.x
-                << ", y:" << mousePressed->position.y << "\n";
+                << ", y:" << -mousePressed->position.y + window.getSize().y
+                << "\n";
+    } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+      // Pause the sim on space.
+      if (keyPressed->scancode == sf::Keyboard::Scancode::Space) {
+        paused = !paused;
+      }
     }
   }
 }

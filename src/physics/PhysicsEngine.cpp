@@ -1,15 +1,17 @@
 #include "physics/PhysicsEngine.hpp"
-#include "physics/collision/colDetection.hpp"
+#include "physics/collision/ColDetector.hpp"
 #include "physics/integrator.hpp"
 #include <chrono>
 #include <iostream>
 #include <thread>
+
 ////////////////////////////////////////////////////////////
 physics::PhysicsEngine::PhysicsEngine() : physics::PhysicsEngine(0) {}
 
 ////////////////////////////////////////////////////////////
 physics::PhysicsEngine::PhysicsEngine(double dt)
-    : env(nullptr), running(false), dt(dt) {}
+    : env(nullptr), running(false), dt(dt),
+      colDet(physics::collision::ColDetector()), slowdown(1) {}
 
 ////////////////////////////////////////////////////////////
 physics::PhysicsEngine::~PhysicsEngine() { joinThread(); }
@@ -40,10 +42,10 @@ void physics::PhysicsEngine::simLoop() {
       continue;
     }
     // Step Environment.
-    stepEnvironment(*env, dt);
+    stepEnvironment(*env, dt*slowdown);
 
     // Detect collisions.
-    collision::findCollisions(*env);
+    colDet.findCollisions();
 
     // Resolve collisions.
   }
@@ -60,4 +62,8 @@ void physics::PhysicsEngine::joinThread() {
 env::Environment* physics::PhysicsEngine::getEnv() { return env; }
 
 ////////////////////////////////////////////////////////////
-void physics::PhysicsEngine::setEnv(env::Environment* env) { this->env = env; }
+void physics::PhysicsEngine::setEnv(env::Environment* env) {
+  colDet.setEnvironment(env);
+  env->setCollisionsP(&colDet.getCollisions());
+  this->env = env;
+}
