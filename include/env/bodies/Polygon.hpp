@@ -1,6 +1,9 @@
 #pragma once
 
+#include "physics/forces/Force.hpp"
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <unordered_map>
 
 namespace env::bodies {
 class Polygon {
@@ -11,7 +14,7 @@ public:
    * @param vertices Vertices of the polygon in COUNTERCLOCKWISE order.
    */
   Polygon(const Eigen::Matrix2Xd& vertices, double rot = 0, double angV = 0,
-          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0});
+          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0}, int id = -1);
 
   /**
    * @brief Copy constructor.
@@ -45,6 +48,13 @@ public:
    * @return Rotation angle (Radian).
    */
   double getRotation() const;
+
+  /**
+   * @brief Obtains reference to current rotation of polygon.
+   *
+   * @return Constant reference to rotation angle (Radian).
+   */
+  const double& getRotationR() const;
 
   /**
    * @brief Gets the area of the polygon.
@@ -128,13 +138,6 @@ public:
   void addAngV(double angV);
 
   /**
-   * @brief Adds value to current rotation.
-   *
-   * @param rot Rotation to add to current rotation. (in rads)
-   */
-  void addRot(double rot);
-
-  /**
    * @brief Adds value to current position of centroid.
    *
    * @param pos Position to add to current centroid position. (in meters)
@@ -170,7 +173,51 @@ public:
    */
   const Eigen::Matrix3Xi& getTriangulation() const;
 
+  /**
+   * @brief Gets ID of polygon.
+   *
+   * @return Polygon id.
+   */
+  int getId() const;
+
+  /**
+   * @brief Sets ID of polygon. (Usually set by the environment to differentiate
+   * between polygons.)
+   *
+   * @param id Polygon id.
+   */
+  void setId(int id);
+
+  /**
+   * @brief Adds a force influencing the polygon.
+   *
+   * @param source Type of force applied.
+   * @param forcePos Where the force is applied relative to the centroid.
+   * @param forceD Direction of the force.
+   * @param amplitude Amplitude of the force.
+   */
+  void addForce(physics::forces::ForceSource source,
+                const Eigen::Vector2d& forcePos, const Eigen::Vector2d& forceD,
+                double amplitude);
+
+  /**
+   * @brief Removes a force influencing the polygon.
+   *
+   * @param source Type of force applied.
+   */
+  void removeForce(physics::forces::ForceSource source);
+
+  /**
+   * @brief Get force by source.
+   *
+   * @param source Type of force applied.
+   *
+   * @return The force matching the source.
+   */
+  physics::forces::Force& getForceBySource(physics::forces::ForceSource source);
+
 private:
+  int id;                   //< ID of polygon to help identify it.
   bool convex;              //< True if convex polygon, false otherwise.
   bool colliding;           //< True if the polygon is currently colliding.
   int nbVertices;           //< Number of vertices making up the polygon.
@@ -186,8 +233,9 @@ private:
   const Eigen::Matrix2Xd
       localVertices; //< Array of vertices with respect to centroid.
   Eigen::Matrix3Xi
-      triangulation; //< Triangulation of the polygon. Each column represents
-                     // the counterclockwise vertex indices of a triangle.
+      triangulation;   //< Triangulation of the polygon. Each column represents
+                       // the counterclockwise vertex indices of a triangle.
+  const double moment; //< Moment of inertia of the polygon about its centroid.
   mutable Eigen::Matrix2Xd
       globalVertices; //< Array of vertices with respect to global coordinates
   mutable Eigen::Vector2d
@@ -195,6 +243,8 @@ private:
                     // getGlobalVertices.
   mutable double
       lastRot; //< Rotation of centroid after last call to getGlobalVertices.
+  std::unordered_map<physics::forces::ForceSource, physics::forces::Force>
+      forces; // Map of forces acting on the plygon.
 
   /**
    * @brief Finds the centroid of the polygon.
@@ -245,5 +295,13 @@ private:
    * @return List of indices representing the vertices of each triangle.
    */
   Eigen::Matrix3Xi triangulate(const Eigen::Matrix2Xd& vertices);
+
+  /**
+   * @brief Finds the moment of inertia of the polygon about its centroid. Uses
+   * triangulation to do so.
+   *
+   * @return Moment of inertia.
+   */
+  double findMoment();
 };
 } // namespace env::bodies

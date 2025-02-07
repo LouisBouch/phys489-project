@@ -3,8 +3,10 @@
 #include "boundaries/Wall.hpp"
 #include "physics/collision/Collision.hpp"
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <shared_mutex>
+#include <unordered_map>
 #include <vector>
 
 namespace env {
@@ -76,35 +78,35 @@ public:
    * @return Amount of time since start of sim. (In microseconds)
    */
   int_least64_t getTotalTime();
+
   /**
    * @brief Adds to total time of sim.
    *
    * @param time Amount of time to add to the sim. (In microseconds)
    */
   void addToTotalTime(int_least64_t time);
+
   /**
-   * @brief Sets pointer to collisions.
+   * @brief Gets the polygons represented by its id. (Locks polygons, must be
+   * manually unlocked aftewards.)
    *
-   * @param cp Pointer to collisions.
-   */
-  void setCollisionsP(const std::vector<physics::collision::Collision>* cp);
-  /**
-   * @brief gets pointer to collisions.
+   * @param id Id of the polygon to fetch.
    *
-   * @return Pointer to collisions.
+   * @return Polygon pointer corresonding to id.
    */
-  const std::vector<physics::collision::Collision>* getCollisionsP() const;
+  std::optional<env::bodies::Polygon*> getPolyById(int id);
 
 private:
   std::vector<bodies::Polygon> polygons; //< Array of polygons.
+  int curId; //< ID for the next polygon to be introduced in environment.
+  std::unordered_map<int, bodies::Polygon*>
+      polyById; //< List of IDs and their affiliated polygon pointers.
   std::atomic<int_least64_t>
       timeBuffer; //< Time to be consumed by physics engine given by the window.
                   // Made atomic to ensure thread safety. (In microseconds)
   std::atomic<int_least64_t>
       totalTime; //< Time since start of simulation. (In microseconds)
-  const std::vector<physics::collision::Collision>*
-      collisions; //< Pointer to the list of collisions the physics engine
-                  // stores. (Only used for debug info for the renderer)
+                 // stores. (Only used for debug info for the renderer)
   mutable std::mutex polygons_m; //< Mutex for polygons list.
 };
 } // namespace env

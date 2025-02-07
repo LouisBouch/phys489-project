@@ -41,7 +41,8 @@ int main() {
   env::bodies::Polygon t2(
       Eigen::MatrixXd{{150, 50}, {200, 50}, {150, 150}}.transpose());
   env::bodies::Polygon t7(
-      Eigen::MatrixXd{{200, 150}, {200, 250}, {100, 250}}.transpose(), 35 / 360.0 * (2 * M_PI), 0);
+      Eigen::MatrixXd{{200, 150}, {200, 250}, {100, 250}}.transpose(),
+      35 / 360.0 * (2 * M_PI), 0);
 
   env::bodies::Square s1(Eigen::Vector2d{150, 200}, 100, 0, 1, {10, 10});
   env::bodies::Square s2(Eigen::Vector2d{100, 200}, 100,
@@ -49,19 +50,20 @@ int main() {
 
   // Create environment
   env::Environment simEnv;
-  simEnv.addPolygon(t7);
-  simEnv.addPolygon(s2);
-
-  // Create window and configure renderer with environment
-  ui::frame::SFMLWindow window;
-  window.create("test");
-  window.getRenderer().setEnv(&simEnv);
-  window.startWindowLoop();
+  // simEnv.addPolygon(t7);
+  // simEnv.addPolygon(s2);
+  simEnv.addPolygon(t1);
+  simEnv.addPolygon(c1);
 
   // Create physics engine
   physics::PhysicsEngine engine(0.01);
   engine.setEnv(&simEnv);
   engine.startSimLoop();
+
+  // Create window and configure renderer with environment
+  ui::frame::SFMLWindow window(engine);
+  window.create("test");
+  window.startWindowLoop();
 
   // Listen for window termination and then terminate physics engine
   window.joinThread();

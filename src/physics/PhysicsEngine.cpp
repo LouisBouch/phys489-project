@@ -42,7 +42,8 @@ void physics::PhysicsEngine::simLoop() {
       continue;
     }
     // Step Environment.
-    stepEnvironment(*env, dt*slowdown);
+    stepEnvironment(*env, dt * slowdown);
+    env->addToTotalTime(microDt * slowdown);
 
     // Detect collisions.
     colDet.findCollisions();
@@ -64,6 +65,16 @@ env::Environment* physics::PhysicsEngine::getEnv() { return env; }
 ////////////////////////////////////////////////////////////
 void physics::PhysicsEngine::setEnv(env::Environment* env) {
   colDet.setEnvironment(env);
-  env->setCollisionsP(&colDet.getCollisions());
   this->env = env;
 }
+////////////////////////////////////////////////////////////
+const physics::collision::ColDetector&
+physics::PhysicsEngine::getColDetector() const {
+  return colDet;
+}
+
+////////////////////////////////////////////////////////////
+double physics::PhysicsEngine::getDt() const { return dt; }
+
+////////////////////////////////////////////////////////////
+void physics::PhysicsEngine::setDt(double dt) { this->dt = dt; }

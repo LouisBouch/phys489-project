@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
   src/env/bodies/Polygon.cpp
   src/env/bodies/Square.cpp
   src/physics/PhysicsEngine.cpp
+  src/physics/forces/Force.cpp
   src/physics/integrator.cpp
   src/physics/collision/ColDetector.cpp
   src/physics/collision/Collision.cpp
@@ -25,6 +26,16 @@ add_executable(${PROJECT_NAME}
 # Specify where the include and library directories are for SFML
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/../sfml3/source/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include/)
+
+# Set data directory
+set(DATA_DIR ${CMAKE_BINARY_DIR}/data) # Specify directory variable
+# Add custom command to always run
+add_custom_target(CopyFonts ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_SOURCE_DIR}/data/TTF ${DATA_DIR}/TTF
+)
+# Add final dependency to build file
+add_dependencies(${PROJECT_NAME} CopyFonts)
 
 # Link to specific libraries depending on compile mode (release / debug)
 # Make it default to debug
@@ -64,6 +75,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Xi
   udev
   GL
+  freetype
 )
 
 # Because I build statically

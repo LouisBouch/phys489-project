@@ -14,4 +14,3 @@
 - Run 'make'
 - Finally, run './SIS' to execute the binary
 
-TODO: Implement locks on polygons to prevent data races between physics engine and renderer.

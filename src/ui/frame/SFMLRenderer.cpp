@@ -3,17 +3,22 @@
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/ConvexShape.hpp"
 #include "SFML/Graphics/Drawable.hpp"
-#include "SFML/Graphics/PrimitiveType.hpp"
-#include "SFML/Graphics/VertexArray.hpp"
+#include "SFML/Graphics/Font.hpp"
+#include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/Graphics/Text.hpp"
+#include "SFML/System/Angle.hpp"
+#include "SFML/System/Vector2.hpp"
 #include "env/Environment.hpp"
 #include "physics/collision/Collision.hpp"
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <cmath>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
+#include <string>
 #include <vector>
 
 ////////////////////////////////////////////////////////////
-ui::frame::SFMLRenderer::SFMLRenderer()
-    : g2d([](const sf::Drawable& s) {}), env(nullptr) {}
+ui::frame::SFMLRenderer::SFMLRenderer(physics::PhysicsEngine& engine)
+    : g2d([](const sf::Drawable& s) {}), engine(engine) {}
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLRenderer::~SFMLRenderer() {}
@@ -26,11 +31,8 @@ void ui::frame::SFMLRenderer::setG2d(
 
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLRenderer::drawEnv() {
-  // Make sure there is an environment
-  if (!env) {
-    return;
-  }
-  std::vector<env::bodies::Polygon>& polygons = env->getPolygons();
+  env::Environment& env = *engine.getEnv();
+  std::vector<env::bodies::Polygon>& polygons = env.getPolygons();
   // Iterate over polygons triangulation and draw them
   Eigen::Matrix2Xd triVertices(2, 3);
   for (env::bodies::Polygon& p : polygons) {
@@ -52,20 +54,18 @@ void ui::frame::SFMLRenderer::drawEnv() {
       fillShape(triVertices, col);
     }
   }
-  env->unlockPolygons();
+  env.unlockPolygons();
   // Draw contact points of collision manifold.
-  if (env->getCollisionsP()) {
-    const std::vector<physics::collision::Collision>& cols =
-        *env->getCollisionsP();
-    sf::CircleShape point(2.f);
-    // Point representing contact manifold.
-    point.setFillColor(sf::Color::Blue);
-    point.setOrigin({2.f, 2.f});
-    for (auto col : cols) {
-      for (Eigen::Vector2d c : col.getManifold()) {
-        point.setPosition({(float)c[0], (float)-c[1] + windowHeight});
-        g2d(point);
-      }
+  const std::vector<physics::collision::Collision>& cols =
+      engine.getColDetector().getCollisions();
+  sf::CircleShape point(2.f);
+  // Point representing contact manifold.
+  point.setFillColor(sf::Color::Blue);
+  point.setOrigin({2.f, 2.f});
+  for (auto col : cols) {
+    for (Eigen::Vector2d c : col.getManifold()) {
+      point.setPosition({(float)c[0], (float)-c[1] + windowHeight});
+      g2d(point);
     }
   }
 }
@@ -91,12 +91,41 @@ void ui::frame::SFMLRenderer::fillShape(const Eigen::Matrix2Xd& vertices,
 }
 
 ////////////////////////////////////////////////////////////
-env::Environment* ui::frame::SFMLRenderer::getEnv() { return env; }
-
-////////////////////////////////////////////////////////////
-void ui::frame::SFMLRenderer::setEnv(env::Environment* env) { this->env = env; }
-
-////////////////////////////////////////////////////////////
 void ui::frame::SFMLRenderer::setWindowHeight(int windowHeight) {
   this->windowHeight = windowHeight;
+}
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLRenderer::showTime() {
+  sf::Font font;
+  if (!font.openFromFile("data/TTF/InconsolataGoNerdFont-Bold.ttf")) {
+    std::cout << "Couldn't load font\n";
+    return;
+  }
+  double timeSec = engine.getEnv()->getTotalTime() / 1e6;
+  sf::Text timeText(font);
+  timeText.setString(std::to_string(timeSec));
+  timeText.setFillColor(sf::Color::Green);
+  timeText.setStyle(sf::Text::Bold);
+  timeText.setCharacterSize(24);
+  g2d(timeText);
+}
+
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLRenderer::drawLine(sf::Vector2f a, sf::Vector2f b,
+                                       int thickness) {
+  // Direction vector from a to b.
+  sf::Vector2f dir = b - a;
+  // Angle offset when on the left of screen.
+  double phi = dir.x < 0 ? M_PI : 0;
+  double angle = std::atan(dir.y / dir.x) + phi;
+  sf::RectangleShape line;
+  line.setFillColor(sf::Color::White);
+  line.setSize({dir.length(), (float)thickness});
+  line.setOrigin({0, (float)thickness / 2.0f});
+  // Requires some change of coordinate to set origin at bottom left of screen.
+  line.setPosition({a.x, (float)windowHeight -
+                             a.y}); // Flip axis and translate down a screen.
+  line.setRotation(
+      sf::radians(-angle)); // Negative rotation to simulate a vertical flip.
+  g2d(line);
 }

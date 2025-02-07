@@ -11,5 +11,5 @@ void physics::stepEnvironment(env::Environment& env, double dt) {
 ////////////////////////////////////////////////////////////
 void physics::stepPolygon(env::bodies::Polygon& polygon, double dt) {
   polygon.addPos(polygon.getVelocity() * dt);
-  polygon.addRot(polygon.getAngV() * dt);
+  polygon.rotate(polygon.getAngV() * dt);
 }

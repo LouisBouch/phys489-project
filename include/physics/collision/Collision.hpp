@@ -2,7 +2,6 @@
 
 #include "eigen3/Eigen/Dense"
 #include "env/bodies/Polygon.hpp"
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <optional>
 namespace physics::collision {
 class Collision {

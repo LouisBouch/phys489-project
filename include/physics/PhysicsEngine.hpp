@@ -57,6 +57,27 @@ public:
   void setEnv(env::Environment* env);
 
   /**
+   * @brief Gets the collision detector.
+   *
+   * @return The collision detector.
+   */
+  const collision::ColDetector& getColDetector() const;
+
+  /**
+   * @brief Getter for delta time.
+   *
+   * @return The delta time of the simulation. (In seconds)
+   */
+  double getDt() const;
+
+  /**
+   * @brief Setter for delta time.
+   *
+   * @param env The new delta time of the simulation.
+   */
+  void setDt(double dt);
+
+  /**
    * @brief Joins the calling thread to the thread that runs the sim loop.
    */
   void joinThread();

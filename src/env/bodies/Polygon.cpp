@@ -1,7 +1,10 @@
 #include "env/bodies/Polygon.hpp"
+#include "SFML/System/Vector2.hpp"
+#include "physics/forces/Force.hpp"
 #include "utils/geo/geoUtils.hpp"
 #include <cmath>
 #include <cstdlib>
+#include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <list>
@@ -11,13 +14,14 @@
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
-                              double angV, Eigen::Vector2d velocity)
+                              double angV, Eigen::Vector2d velocity, int id)
     : nbVertices(vertices.cols()), area(findArea(vertices)), colliding(false),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
       localVertices(findLocalVertices(vertices)),
       convex(findConvexity(vertices)), triangulation(triangulate(vertices)),
-      globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid) {
+      globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid),
+      id(id), moment(findMoment()) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -30,9 +34,13 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
     : Polygon(polygon.getLocalVertices(), polygon.rot, polygon.angV,
-              polygon.velocity) {
-      translate(polygon.getCentroid());
-    }
+              polygon.velocity, polygon.id) {
+  translate(polygon.getCentroid());
+  // Ensure forces are copied properly.
+  for (auto& force : forces) {
+    force.second.setRot(&rot);
+  }
+}
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::~Polygon() {}
@@ -198,9 +206,6 @@ bool env::bodies::Polygon::findConvexity(const Eigen::Matrix2Xd& vertices) {
 }
 
 ////////////////////////////////////////////////////////////
-void env::bodies::Polygon::addRot(double rot) { this->rot += rot; }
-
-////////////////////////////////////////////////////////////
 void env::bodies::Polygon::addPos(const Eigen::Vector2d& pos) {
   centroid += pos;
 }
@@ -281,6 +286,73 @@ env::bodies::Polygon::triangulate(const Eigen::Matrix2Xd& vertices) {
   return tris;
 }
 ////////////////////////////////////////////////////////////
-double env::bodies::Polygon::getRotation() const {
-  return this->rot;
+double env::bodies::Polygon::getRotation() const { return this->rot; }
+
+////////////////////////////////////////////////////////////
+const double& env::bodies::Polygon::getRotationR() const { return rot; }
+
+////////////////////////////////////////////////////////////
+int env::bodies::Polygon::getId() const { return id; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setId(int id) { this->id = id; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::addForce(physics::forces::ForceSource source,
+                                    const Eigen::Vector2d& forcePos,
+                                    const Eigen::Vector2d& forceD,
+                                    double amplitude) {
+  forces.emplace(
+      source, physics::forces::Force(forceD, amplitude, rot, forcePos, source));
+}
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::removeForce(physics::forces::ForceSource source) {
+  forces.erase(source);
+}
+////////////////////////////////////////////////////////////
+physics::forces::Force&
+env::bodies::Polygon::getForceBySource(physics::forces::ForceSource source) {
+  return forces.at(source);
+}
+
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::findMoment() {
+  double moment = 0;
+  // Add up moment of inerta of each triangle making up the polygon around the
+  // centroid of the polygon.
+  for (int triInd = 0; triInd < triangulation.cols(); triInd++) {
+    double momentTri = 0; // Moment of individual triangle.
+    Eigen::Vector3i triVi =
+        triangulation.col(triInd); // Vertices of the triangle.
+    // First get centroid of triangle.
+    Eigen::Vector2d triCentroid; // Centroid of the triangle.
+    for (int triV = 0; triV < 3; triV++) {
+      triCentroid.noalias() += getGlobalVertices().col(triVi[triV]);
+    }
+    triCentroid = triCentroid / 3.0;
+
+    // Now the area of the triangle.
+    double areaTri = utils::geo::findParaArea(
+        getGlobalVertices().col(triVi[0]), getGlobalVertices().col(triVi[1]),
+        getGlobalVertices().col(triVi[2])) / 2.0;
+
+    // Get moment of inertia around centroid of triangle.
+    // Use following formula: I = (a²+b²+c²)*m/18. Where a,b, and c are the side
+    // lengths of the triangle, and m is its mass.
+    for (int curV = 0, lastV = 2; curV < 3; lastV = curV++) {
+      double sideLength = (getGlobalVertices().col(triVi[curV]) -
+                           getGlobalVertices().col(triVi[lastV]))
+                              .norm();
+      sideLength *= sideLength;
+      momentTri += sideLength;
+    }
+    momentTri *= areaTri / 18.0;
+
+    // Use parallel axis theorem to find the moment around the centroid of the
+    // polygon.
+    double squaredDistCentroids = (triCentroid - centroid).squaredNorm();
+    moment += momentTri + areaTri * squaredDistCentroids;
+  }
+  return moment;
 }

@@ -81,13 +81,13 @@ physics::collision::Collision::findManifold(
     return std::nullopt;
   }
   std::vector<Eigen::Vector2d> mani = maniOpt.value();
-  std::cout << "inc edge: \n";
-  std::cout << mani[0] << "\n";
-  std::cout << mani[1] << "\n\n";
-
-  std::cout << "ref edge: \n";
-  std::cout << vs1.col(t1[refEdgeTi[0]]) << "\n";
-  std::cout << vs1.col(t1[refEdgeTi[1]]) << "\n\n";
+  // std::cout << "inc edge: \n";
+  // std::cout << mani[0] << "\n";
+  // std::cout << mani[1] << "\n\n";
+  //
+  // std::cout << "ref edge: \n";
+  // std::cout << vs1.col(t1[refEdgeTi[0]]) << "\n";
+  // std::cout << vs1.col(t1[refEdgeTi[1]]) << "\n\n";
 
   // Now clip the manifold.
   for (int i = 0; i < 2; i++) {

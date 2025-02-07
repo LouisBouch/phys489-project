@@ -1,15 +1,16 @@
 #include "env/Environment.hpp"
 #include "env/bodies/Polygon.hpp"
 #include <cstdint>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
 
 ////////////////////////////////////////////////////////////
-env::Environment::Environment()
-    : polygons(std::vector<bodies::Polygon>()), timeBuffer(0),
-      collisions(nullptr) {}
+env::Environment::Environment() : Environment(std::vector<bodies::Polygon>()) {}
 
 ////////////////////////////////////////////////////////////
 env::Environment::Environment(std::vector<bodies::Polygon> polygons)
-    : polygons(polygons) {}
+    : polygons(polygons), timeBuffer(0), totalTime(0), curId(0) {}
 
 ////////////////////////////////////////////////////////////
 env::Environment::Environment(const Environment& env)
@@ -21,6 +22,13 @@ env::Environment::~Environment() {}
 ////////////////////////////////////////////////////////////
 void env::Environment::addPolygon(bodies::Polygon& polygon) {
   polygons.push_back(polygon);
+  polygons.back().setId(curId);
+  // Remake the hashmap to prevent dangling reference after vector copy.
+  for (int i = 0; i < polygons.size() - 1; i++) {
+    polyById[polygons[i].getId()] = &polygons[i];
+  }
+  polyById[curId] = &polygons.back();
+  curId++;
 }
 
 ////////////////////////////////////////////////////////////
@@ -30,9 +38,7 @@ std::vector<env::bodies::Polygon>& env::Environment::getPolygons() {
 }
 
 ////////////////////////////////////////////////////////////
-void env::Environment::unlockPolygons() {
-  polygons_m.unlock();
-}
+void env::Environment::unlockPolygons() { polygons_m.unlock(); }
 
 ////////////////////////////////////////////////////////////
 bool env::Environment::addToTimeBuffer(int time) {
@@ -51,13 +57,13 @@ int_least64_t env::Environment::getTotalTime() { return totalTime; }
 
 ////////////////////////////////////////////////////////////
 void env::Environment::addToTotalTime(int_least64_t time) { totalTime += time; }
+
 ////////////////////////////////////////////////////////////
-void env::Environment::setCollisionsP(
-    const std::vector<physics::collision::Collision>* cp) {
-  this->collisions = cp;
-}
-////////////////////////////////////////////////////////////
-const std::vector<physics::collision::Collision>*
-env::Environment::getCollisionsP() const {
-  return collisions;
+std::optional<env::bodies::Polygon*> env::Environment::getPolyById(int id) {
+  try {
+    env::bodies::Polygon* pp = polyById.at(id);
+    return pp;
+  } catch (std::out_of_range e) {
+    return std::nullopt;
+  }
 }

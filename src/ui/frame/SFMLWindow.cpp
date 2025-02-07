@@ -1,16 +1,26 @@
 #include "ui/frame/SFMLWindow.hpp"
 #include "SFML/Graphics/Drawable.hpp"
+#include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Keyboard.hpp"
+#include "SFML/Window/Mouse.hpp"
+#include "env/Environment.hpp"
+#include "env/bodies/Polygon.hpp"
+#include "physics/forces/Force.hpp"
 #include "ui/frame/SFMLRenderer.hpp"
+#include "utils/geo/geoUtils.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
+#include <chrono>
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <thread>
 
 #define FPS 60
 
 ////////////////////////////////////////////////////////////
-ui::frame::SFMLWindow::SFMLWindow() : running(false), paused(false) {}
+ui::frame::SFMLWindow::SFMLWindow(physics::PhysicsEngine& engine)
+    : running(false), paused(false), engine(engine), renderer(engine),
+      dragging(false), dragPId(-1) {}
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLWindow::~SFMLWindow() {
@@ -69,12 +79,14 @@ void ui::frame::SFMLWindow::windowLoop() {
 
     // draw...
     window.clear();
+    drawDragLine();
 
     int deltaTime = clock.restart().asSeconds() *
                     1e6; // Time since last render in microseconds.
     renderer.drawEnv();
-    if (!paused && renderer.getEnv()) {
-      renderer.getEnv()->addToTimeBuffer(deltaTime);
+    renderer.showTime();
+    if (!paused && engine.getEnv()) {
+      engine.getEnv()->addToTimeBuffer(deltaTime);
     }
 
     window.display();
@@ -113,13 +125,32 @@ void ui::frame::SFMLWindow::handleEvents() {
       renderer.setWindowHeight(window.getSize().y);
     } else if (const auto* mousePressed =
                    event->getIf<sf::Event::MouseButtonPressed>()) {
-      std::cout << "x: " << mousePressed->position.x
-                << ", y:" << -mousePressed->position.y + window.getSize().y
-                << "\n";
+      int x = mousePressed->position.x;
+      int y =
+          -mousePressed->position.y +
+          window.getSize().y; // Shifts y axis to bottom and make it point up.
+      std::cout << "x: " << x << ", y:" << y << "\n";
+      // Create dragging force if you are dragging a polygon.
+      if (int id = clickedInsidePolygon({x, y}); id != -1) {
+        createForce(id, {x, y});
+      }
+    } else if (const auto* mouseRelease =
+                   event->getIf<sf::Event::MouseButtonReleased>()) {
+      // Remove force once you stop dragging.
+      removeForce();
     } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
       // Pause the sim on space.
       if (keyPressed->scancode == sf::Keyboard::Scancode::Space) {
         paused = !paused;
+      }
+      // Forward 5 steps.
+      else if (keyPressed->scancode == sf::Keyboard::Scancode::Right &&
+               keyPressed->control) {
+        engine.getEnv()->addToTimeBuffer(engine.getDt() * 1e6 * 5);
+      }
+      // Forward one step.
+      else if (keyPressed->scancode == sf::Keyboard::Scancode::Right) {
+        engine.getEnv()->addToTimeBuffer(engine.getDt() * 1e6);
       }
     }
   }
@@ -127,3 +158,81 @@ void ui::frame::SFMLWindow::handleEvents() {
 
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLWindow::setPaused(bool paused) { this->paused = paused; }
+
+////////////////////////////////////////////////////////////
+int ui::frame::SFMLWindow::clickedInsidePolygon(sf::Vector2i cursor) {
+  std::vector<env::bodies::Polygon>& polys = engine.getEnv()->getPolygons();
+  for (env::bodies::Polygon& p : polys) {
+    if (utils::geo::pointInPolygon(p.getGlobalVertices(),
+                                   {cursor.x, cursor.y})) {
+      int id = p.getId();
+      engine.getEnv()->unlockPolygons();
+      return id;
+    }
+  }
+  engine.getEnv()->unlockPolygons();
+  return -1;
+}
+
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLWindow::createForce(int pId, sf::Vector2i cursor) {
+  // Last force was not properly deleted, so delete it now.
+  if (dragging) {
+    removeForce();
+  }
+  dragging = true;
+  dragPId = pId;
+  auto pp = engine.getEnv()->getPolyById(dragPId);
+  // Invalid id
+  if (!pp.has_value()) {
+    return;
+  }
+  env::bodies::Polygon& p = *pp.value();
+
+  p.addForce(physics::forces::ForceSource::UserDrag,
+             Eigen::Vector2d{cursor.x, cursor.y} - p.getCentroid(), {1, 0}, 0);
+  // Unlock polygons
+  engine.getEnv()->unlockPolygons();
+  return;
+}
+
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLWindow::removeForce() {
+  if (!dragging) {
+    return;
+  }
+  dragging = false;
+  auto pp = engine.getEnv()->getPolyById(dragPId);
+  // Invalid id
+  if (!pp.has_value()) {
+    return;
+  }
+  env::bodies::Polygon& p = *pp.value();
+  p.removeForce(physics::forces::ForceSource::UserDrag);
+}
+
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLWindow::drawDragLine() {
+  if (!dragging) {
+    return;
+  }
+  // Get force
+  auto pp = engine.getEnv()->getPolyById(dragPId);
+  // Invalid id
+  if (!pp.has_value()) {
+    return;
+  }
+  env::bodies::Polygon& p = *pp.value();
+  physics::forces::ForceSource s = physics::forces::ForceSource::UserDrag;
+  physics::forces::Force& polyForcePoint = p.getForceBySource(s);
+
+  // Get point on screen where force is applied
+  Eigen::Vector2d a = p.getCentroid() + polyForcePoint.getForcePos();
+  // Get mouse position
+  sf::Vector2i b = sf::Mouse::getPosition(window);
+  // Draw line from force point to mouse.
+  renderer.drawLine({(float)a.x(), (float)a.y()},
+                    {(float)b.x, (float)window.getSize().y - b.y}, 2);
+
+  engine.getEnv()->unlockPolygons();
+}
