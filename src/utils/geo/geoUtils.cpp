@@ -157,3 +157,15 @@ utils::geo::interSegLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
   double t = n.dot(pl - p1) / n.dot(p2 - p1);
   return p1 + t * (p2 - p1);
 }
+////////////////////////////////////////////////////////////
+double utils::geo::cross2D(const Eigen::Vector2d& a, const Eigen::Vector2d& b) {
+  return a.x()*b.y() - a.y()*b.x(); 
+}
+////////////////////////////////////////////////////////////
+int utils::geo::sign(double v) {
+  return (v > 0) - (v < 0);
+}
+////////////////////////////////////////////////////////////
+double utils::geo::signedAngle(const Eigen::Vector2d& a, const Eigen::Vector2d& b) {
+  return std::atan2(cross2D(a, b), a.dot(b));
+}

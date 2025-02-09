@@ -99,5 +99,11 @@ private:
    *
    */
   void drawDragLine();
+
+  /**
+   * @brief Updates the drag force.
+   *
+   */
+  void updateDragForce();
 };
 } // namespace ui::frame

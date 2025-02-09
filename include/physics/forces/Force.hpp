@@ -4,9 +4,8 @@
 
 namespace physics::forces {
 enum class ForceSource {
-  Unspecified, //< Default source.
-  UserDrag,    //< Created by the user dragging the polygon.
-  Global,      //< Such as gravity.
+  UserPull,        //< Created by the user dragging the polygon.
+  UserInducedDrag, //< Force used to slow down the polygon.
 };
 class Force {
 public:
@@ -21,8 +20,7 @@ public:
    * @param source Source of the force.
    */
   Force(Eigen::Vector2d forceD, double amplitude, double& rot,
-        Eigen::Vector2d forcePos,
-        ForceSource source = ForceSource::Unspecified);
+        Eigen::Vector2d forcePos, ForceSource source);
 
   /**
    * @brief Gets the normalized force direction.
@@ -48,7 +46,7 @@ public:
    *
    * @param forceD Force direction.
    */
-  void setForceD(Eigen::Vector2d& forceD);
+  void setForceD(const Eigen::Vector2d& forceD);
   /**
    * @brief Sets the force amplitude.
    *
@@ -60,7 +58,7 @@ public:
    *
    * @param forcePos Force position.
    */
-  void setForcePos(Eigen::Vector2d& forcePos);
+  void setForcePos(const Eigen::Vector2d& forcePos);
   /**
    * @brief Gets the force source.
    *

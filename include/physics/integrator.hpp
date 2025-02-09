@@ -12,6 +12,23 @@ namespace physics {
 void stepEnvironment(env::Environment& env, double dt);
 
 /**
+ * @brief Aplies the forces contained within the environment.
+ *
+ * @param env Environment to advance in time.
+ * @param dt Amount of time to step forward. (In seconds)
+ */
+void applyForces(env::Environment& env, double dt);
+
+/**
+ * @brief Aplies the forces contained within the environment.
+ *
+ * @param env Environment to advance in time.
+ * @param dt Amount of time to step forward. (In seconds)
+ */
+void applyForceToPoly(env::bodies::Polygon& polygon, forces::Force& f,
+                      double dt);
+
+/**
  * @brief Steps a single polygon in time.
  *
  * @param polygon Polygon to advance in time.

@@ -11,6 +11,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
 #include <chrono>
+#include <cmath>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <thread>
@@ -79,7 +80,10 @@ void ui::frame::SFMLWindow::windowLoop() {
 
     // draw...
     window.clear();
-    drawDragLine();
+    if (dragging) {
+      drawDragLine();
+      updateDragForce();
+    }
 
     int deltaTime = clock.restart().asSeconds() *
                     1e6; // Time since last render in microseconds.
@@ -189,8 +193,12 @@ void ui::frame::SFMLWindow::createForce(int pId, sf::Vector2i cursor) {
   }
   env::bodies::Polygon& p = *pp.value();
 
-  p.addForce(physics::forces::ForceSource::UserDrag,
-             Eigen::Vector2d{cursor.x, cursor.y} - p.getCentroid(), {1, 0}, 0);
+  // Pulling force.
+  p.addForce(physics::forces::ForceSource::UserPull,
+             Eigen::Vector2d{cursor.x, cursor.y} - p.getCentroid(), {1, 0},
+             0);
+  // Force of drag.
+  p.addForce(physics::forces::ForceSource::UserInducedDrag, {0, 0}, {1, 0}, 0);
   // Unlock polygons
   engine.getEnv()->unlockPolygons();
   return;
@@ -208,14 +216,12 @@ void ui::frame::SFMLWindow::removeForce() {
     return;
   }
   env::bodies::Polygon& p = *pp.value();
-  p.removeForce(physics::forces::ForceSource::UserDrag);
+  p.removeForce(physics::forces::ForceSource::UserPull);
+  p.removeForce(physics::forces::ForceSource::UserInducedDrag);
 }
 
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLWindow::drawDragLine() {
-  if (!dragging) {
-    return;
-  }
   // Get force
   auto pp = engine.getEnv()->getPolyById(dragPId);
   // Invalid id
@@ -223,7 +229,7 @@ void ui::frame::SFMLWindow::drawDragLine() {
     return;
   }
   env::bodies::Polygon& p = *pp.value();
-  physics::forces::ForceSource s = physics::forces::ForceSource::UserDrag;
+  physics::forces::ForceSource s = physics::forces::ForceSource::UserPull;
   physics::forces::Force& polyForcePoint = p.getForceBySource(s);
 
   // Get point on screen where force is applied
@@ -233,6 +239,43 @@ void ui::frame::SFMLWindow::drawDragLine() {
   // Draw line from force point to mouse.
   renderer.drawLine({(float)a.x(), (float)a.y()},
                     {(float)b.x, (float)window.getSize().y - b.y}, 2);
+
+  engine.getEnv()->unlockPolygons();
+}
+////////////////////////////////////////////////////////////
+void ui::frame::SFMLWindow::updateDragForce() {
+  // Get force
+  auto pp = engine.getEnv()->getPolyById(dragPId);
+  // Invalid id
+  if (!pp.has_value()) {
+    return;
+  }
+
+  env::bodies::Polygon& p = *pp.value();
+  physics::forces::Force& polyForcePoint =
+      p.getForceBySource(physics::forces::ForceSource::UserPull);
+  physics::forces::Force& polyForceDrag =
+      p.getForceBySource(physics::forces::ForceSource::UserInducedDrag);
+
+  // Get point on screen where force is applied
+  Eigen::Vector2d a = p.getCentroid() + polyForcePoint.getForcePos();
+  // Get mouse position
+  sf::Vector2i b = sf::Mouse::getPosition(window);
+  b.y = window.getSize().y - b.y; // Adjust to physical coordinate system.
+  Eigen::Vector2d dir = {b.x - a.x(), b.y - a.y()};
+  double k = 1e2 * p.getArea(); // Spring coefficient
+  double pullAmp = k * dir.norm();
+  double d =
+      2 * std::sqrt(p.getArea() * k); // Damping factor (critical damping)
+  double dragAmp = d * p.getVelocity().norm();
+  ;
+  // Updates pulling force.
+  polyForcePoint.setForceD(dir);
+  polyForcePoint.setAmplitude(pullAmp);
+
+  // Updates force of drag.
+  polyForceDrag.setForceD(-p.getVelocity());
+  polyForceDrag.setAmplitude(dragAmp);
 
   engine.getEnv()->unlockPolygons();
 }

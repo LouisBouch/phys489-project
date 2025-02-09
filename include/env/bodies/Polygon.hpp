@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <unordered_map>
+#include <vector>
 
 namespace env::bodies {
 class Polygon {
@@ -216,6 +217,21 @@ public:
    */
   physics::forces::Force& getForceBySource(physics::forces::ForceSource source);
 
+  /**
+   * @brief Get all sources of force applied to polygon.
+   *
+   * @return The force sources currently affecting the polygon.
+   */
+  std::unordered_map<physics::forces::ForceSource, physics::forces::Force>&
+  getForceSources();
+
+  /**
+   * @brief Get moment of polygon around its centroid.
+   *
+   * @return The moment of the polygon.
+   */
+  double getMoment();
+
 private:
   int id;                   //< ID of polygon to help identify it.
   bool convex;              //< True if convex polygon, false otherwise.
@@ -233,14 +249,18 @@ private:
   const Eigen::Matrix2Xd
       localVertices; //< Array of vertices with respect to centroid.
   Eigen::Matrix3Xi
-      triangulation;   //< Triangulation of the polygon. Each column represents
-                       // the counterclockwise vertex indices of a triangle.
-  const double moment; //< Moment of inertia of the polygon about its centroid.
+      triangulation; //< Triangulation of the polygon. Each column represents
+                     // the counterclockwise vertex indices of a triangle.
   mutable Eigen::Matrix2Xd
-      globalVertices; //< Array of vertices with respect to global coordinates
+      globalVertices;  //< Array of vertices with respect to global coordinates
+  const double moment; //< Moment of inertia of the polygon about its centroid.
   mutable Eigen::Vector2d
       lastCentroid; //< Position of centroid after last call to
                     // getGlobalVertices.
+  std::vector<std::vector<int>>
+      convexification; //< Convex polygons making up the polygon. Stores index
+                       //of vertices making it up.
+
   mutable double
       lastRot; //< Rotation of centroid after last call to getGlobalVertices.
   std::unordered_map<physics::forces::ForceSource, physics::forces::Force>
@@ -282,19 +302,6 @@ private:
    */
   Eigen::Matrix2Xd findLocalVertices(const Eigen::Matrix2Xd& vertices);
 
-  /**
-   * @brief Determines whether polygon is convex or not.
-   *
-   * @return Convexity of polygon. (True if convex)
-   */
-  bool findConvexity(const Eigen::Matrix2Xd& vertices);
-
-  /**
-   * @brief Triangulates a polygon.
-   *
-   * @return List of indices representing the vertices of each triangle.
-   */
-  Eigen::Matrix3Xi triangulate(const Eigen::Matrix2Xd& vertices);
 
   /**
    * @brief Finds the moment of inertia of the polygon about its centroid. Uses

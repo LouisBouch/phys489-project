@@ -123,7 +123,7 @@ bool segCrossesLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
                     const Eigen::Vector2d& n, const Eigen::Vector2d& pl);
 
 /**
- * @brief Determiens where a segment intersects a line.
+ * @brief Determines where a segment intersects a line.
  *
  * @param p1 First point on segment.
  * @param p2 Second point on segment.
@@ -132,6 +132,35 @@ bool segCrossesLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
  *
  * @return Whether the segment fully crosses the line, and if so, where.
  */
-std::optional<Eigen::Vector2d> interSegLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
-                    const Eigen::Vector2d& n, const Eigen::Vector2d& pl);
+std::optional<Eigen::Vector2d> interSegLine(const Eigen::Vector2d& p1,
+                                            const Eigen::Vector2d& p2,
+                                            const Eigen::Vector2d& n,
+                                            const Eigen::Vector2d& pl);
+
+/**
+ * @brief Performs 2D cross product (Assume 0 z value for both vectors).
+ *
+ * @param a First vector.
+ * @param b Second vector.
+ *
+ * @return The z value of the cross product axb.
+ */
+double cross2D(const Eigen::Vector2d& a, const Eigen::Vector2d& b);
+/**
+ * @brief Finds the angle between the two vectors..
+ *
+ * @param a First vector.
+ * @param b Second vector.
+ *
+ * @return The angle between a and b. (In radians, and positive if b is left of a)
+ */
+double signedAngle(const Eigen::Vector2d& a, const Eigen::Vector2d& b);
+/**
+ * @brief Finds the sign of a double.
+ *
+ * @param v Value to obtain the sign from.
+ *
+ * @return Sign of value. (returns 0 if value is 0)
+ */
+int sign(double v);
 } // namespace utils::geo

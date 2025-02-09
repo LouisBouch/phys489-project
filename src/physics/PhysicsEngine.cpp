@@ -41,6 +41,8 @@ void physics::PhysicsEngine::simLoop() {
           std::chrono::microseconds((int)microDt - env->getTimeBuffer()));
       continue;
     }
+    // Apply forces on polygons.
+    applyForces(*env, dt * slowdown);
     // Step Environment.
     stepEnvironment(*env, dt * slowdown);
     env->addToTotalTime(microDt * slowdown);

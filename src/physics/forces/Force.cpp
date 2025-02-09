@@ -39,8 +39,8 @@ const Eigen::Vector2d& physics::forces::Force::getForcePos() const {
 }
 
 ////////////////////////////////////////////////////////////
-void physics::forces::Force::setForceD(Eigen::Vector2d& forceD) {
-  this->forceD = forceD;
+void physics::forces::Force::setForceD(const Eigen::Vector2d& forceD) {
+  this->forceD = forceD.normalized();
 }
 
 ////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ void physics::forces::Force::setAmplitude(double amplitude) {
 }
 
 ////////////////////////////////////////////////////////////
-void physics::forces::Force::setForcePos(Eigen::Vector2d& forcePos) {
+void physics::forces::Force::setForcePos(const Eigen::Vector2d& forcePos) {
   this->forcePos = forcePos;
   forcePosLocal = findForcePosLocal();
 }

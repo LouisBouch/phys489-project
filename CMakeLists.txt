@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME}
   src/physics/collision/ColDetector.cpp
   src/physics/collision/Collision.cpp
   src/utils/geo/geoUtils.cpp
+  src/utils/geo/geoConvex.cpp
 )
 
 # Specify where the include and library directories are for SFML
