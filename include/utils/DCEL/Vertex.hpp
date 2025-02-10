@@ -1,8 +1,8 @@
 #pragma once
 
 #include "utils/DCEL/HalfEdge.hpp"
-namespace utils::DCEL {
 
+namespace utils::DCEL {
 // Forward declaration
 class HalfEdge;
 
@@ -21,13 +21,13 @@ public:
    *
    * @return Vertex index.
    */
-  int getVertexI() const;
+  int getVertexI();
   /**
    * @brief Getter for the incident edge of the vertex.
    *
    * @return Incident edge.
    */
-  const HalfEdge* getIncidentEdge() const;
+  HalfEdge* getIncidentEdge();
   /**
    * @brief Setter for the incident edge of the vertex.
    *

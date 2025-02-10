@@ -3,11 +3,11 @@
 #include "utils/DCEL/Face.hpp"
 #include "utils/DCEL/Vertex.hpp"
 
+namespace utils::DCEL {
 // Forward declaration
 class Face;
 class Vertex;
 
-namespace utils::DCEL {
 class HalfEdge {
 public:
   /**
@@ -28,37 +28,44 @@ public:
    *
    * @return Origin vertex.
    */
-  const Vertex* getOrigin() const;
+  Vertex* getOrigin();
   /**
    * @brief Gets twin half-edge.
    *
    * @return Twin half-edge.
    */
-  const HalfEdge* getTwin() const;
+  HalfEdge* getTwin();
   /**
    * @brief Gets next half-edge.
    *
    * @return Next half-edge.
    */
-  const HalfEdge* getNext() const;
+  HalfEdge* getNext();
   /**
    * @brief Gets previous half-edge.
    *
    * @return Previous half-edge.
    */
-  const HalfEdge* getPrev() const;
+  HalfEdge* getPrev();
   /**
    * @brief Gets incident face.
    *
    * @return Incident face.
    */
-  const Face* getIncidentFace() const;
+  Face* getIncidentFace();
   /**
    * @brief Gets destination vertex.
    *
    * @return Destination vertex.
    */
-  const Vertex* getDestination() const;
+  Vertex* getDestination();
+
+  /**
+   * @brief Gets canditate status of edge.
+   *
+   * @return Whether the edge could be removed without introducing concaveness.
+   */
+  bool isCandidate() const;
 
   /**
    * @brief Sets origin vertex.
@@ -91,11 +98,23 @@ public:
    */
   void setIncidentFace(Face* face);
 
+  /**
+   * @brief Sets canditate status of edge.
+   *
+   * @param candidate Whether the edge could be removed without introducing
+   * concaveness.
+   */
+  void setCandidate(bool candidate);
+
 private:
-  Vertex* origin;     //< Vertex at the origin.
-  HalfEdge* twin;     //< Twin half-edge.
-  HalfEdge* next;     //< Next half-edge.
-  HalfEdge* prev;     //< Previous half-edge.
+  bool candidate; //< If true, the edge will be considered when going over inner
+                  // edges to convexify the polygon. If false, it implies the
+                  // edge and its twin cannot be removed without introducing
+                  // concaveness.
+  Vertex* origin; //< Vertex at the origin.
+  HalfEdge* twin; //< Twin half-edge.
+  HalfEdge* next; //< Next half-edge.
+  HalfEdge* prev; //< Previous half-edge.
   Face* incidentFace; //< Face incident to the half-edge.
 };
 } // namespace utils::DCEL

@@ -22,6 +22,10 @@ add_executable(${PROJECT_NAME}
   src/physics/collision/Collision.cpp
   src/utils/geo/geoUtils.cpp
   src/utils/geo/geoConvex.cpp
+  src/utils/DCEL/DCEL.cpp
+  src/utils/DCEL/Vertex.cpp
+  src/utils/DCEL/HalfEdge.cpp
+  src/utils/DCEL/Face.cpp
 )
 
 # Specify where the include and library directories are for SFML

@@ -30,26 +30,24 @@ std::vector<std::vector<int>> convexify(const Eigen::Matrix2Xd& vertices,
 bool findConvexity(const Eigen::Matrix2Xd& vertices);
 } // namespace utils::geo
 
-// 1. Create hashmap containing inner edges as key and objects as value. These
-// objects will contain 4 vertices describing the 2 inner edge vertices and the
-// vertices before and after the edge. Given edge (b,c), let the 4 vertices be
-// as follows: (a,b,c,d). The first polygon will be left of the edge, and the
-// second polygon will be the one on the right. Sort the edge vertices by index
-// number.
-// 1.1 Create another hashmap. Where each key is a polygon (list of
-// vertices), and the value is a list of adjacent edges.
+// 1. Create a DCEL from the triangualtion of the polygon.
 //
-// 2. For each inner edge, check if adjacent convex polygons make a convex
-// polygon. If true, go to step 3, else go to 4.
+// 2. Go through each half-edge in the DCEL, and check if the incident of both
+// twin half-edges can be merged into a convex polygon. If so, go to step 3,
+// else to step 4.
 //
-// 3. Merge both convex polygon into a bigger polygon.
-// 3.1 Remove both polygons
-// from the second hashmap and create another entry with the list of adjacent
-// edges being the union of each list of adjacent edges from the recently
-// deleted polygons. 3.2 For each adjacent edges of deleted polygon, update the
-// values they contain to reflect the new merged polygon.
+// 3. You must delete the half-edges between the polygons and merge the faces.
+// Which can be done with the following instructions:
+// 3.1 Update the incidentEdge pointer of the half-edges origin vertices as:
+// e->origin.incidentEdge = e->twin.next.
+// 3.2 Update the left face's outerEdge as such: eLeft->face.outerEdge = eLeft.next.
+// 3.3 For every edge surrounding
+// the right face, change their face pointer as such: e.face = eLeft.face.
+// 3.3 Delete the right face.
+// 3.4 Update next and previous edges from soon to be
+// deleted as such: e->prev.next = e->twin.next, e->next.prev = e->twin.prev.
+// 3.5 Delete both twin edges from the DCEL.
+// 3.6 Go back to step 2.
 //
-// 4. If all edges have been checked and none can be removed, go to 5. Else go
-// back to 2.
-//
-// 5. Go through the second hashmap and form the list of convex polygon indices.
+// 4. If all half-edges have been checked, iterate over the faces of the DCEL
+// and use these as the convex polygon decomposition. Else, go back to 2.

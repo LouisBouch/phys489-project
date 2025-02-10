@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/DCEL/HalfEdge.hpp"
+
 namespace utils::DCEL {
 // Forward declaration
 class HalfEdge;
@@ -19,7 +20,7 @@ public:
    *
    * @return Outer half-edge.
    */
-  const HalfEdge* getOuterEdge() const;
+  HalfEdge* getOuterEdge();
 
   /**
    * @brief Gets the outer edge.

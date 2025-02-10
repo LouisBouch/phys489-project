@@ -1,5 +1,9 @@
 #include "utils/geo/geoConvex.hpp"
+#include "utils/DCEL/DCEL.hpp"
+#include "utils/DCEL/HalfEdge.hpp"
 #include "utils/geo/geoUtils.hpp"
+#include <codecvt>
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <list>
 #include <numeric>
@@ -16,8 +20,71 @@ utils::geo::convexify(const Eigen::Matrix2Xd& vertices,
       convexification[tri].push_back(triangulation.col(tri)[triV]);
     }
   }
-  // Goes through every triangle and see if it can remove an edge separating
-  // it from another triangle.
+  // Creates a DCEL from the triangulation.
+  utils::DCEL::DCEL d = utils::DCEL::DCEL::makeDCEL(convexification, vertices.cols());
+
+  // Convexifies the polygon by going through its DCEL edges and removing the
+  // ones that can be removed.
+  for (const auto& [key, edge] : d.getHalfEdges()) {
+    // If twin edge has been checked and determined to not be a candidate, then
+    // don't check this one.
+    if (!edge->getTwin()->isCandidate()) {
+      continue;
+    }
+
+    // Check origin angle.
+    Eigen::Vector2d a =
+        vertices.col(edge->getPrev()->getOrigin()->getVertexI());
+    Eigen::Vector2d b = vertices.col(edge->getOrigin()->getVertexI());
+    Eigen::Vector2d c = vertices.col(
+        edge->getTwin()->getNext()->getDestination()->getVertexI());
+    double signedArea = utils::geo::findParaArea(a, b, c);
+    // If area is negative, we have an angle > 180, which means we cannot remove
+    // the edge without indtroducing concavity.
+    if (signedArea < 0) {
+      edge->setCandidate(false);
+      continue;
+    }
+
+    // Check destination angle.
+    a = vertices.col(edge->getTwin()->getPrev()->getOrigin()->getVertexI());
+    b = vertices.col(edge->getDestination()->getVertexI());
+    c = vertices.col(edge->getNext()->getDestination()->getVertexI());
+    signedArea = utils::geo::findParaArea(a, b, c);
+    // If area is negative, we have an angle > 180, which means we cannot remove
+    // the edge without indtroducing concavity.
+    if (signedArea < 0) {
+      edge->setCandidate(false);
+      continue;
+    }
+    // If both angles were less than 180 degrees, remove the half-edge and its
+    // twin.
+    d.removeEdge(key);
+  }
+
+  // From the list of faces, create the final convexification.
+  convexification.clear();
+  for (const std::unique_ptr<utils::DCEL::Face>& face : d.getFaces()) {
+    // Add face to convexification.
+    convexification.push_back(std::vector<int>());
+    utils::DCEL::HalfEdge* startHE = face->getOuterEdge();
+    utils::DCEL::HalfEdge* curHE = startHE;
+    do {
+      convexification.back().push_back(curHE->getOrigin()->getVertexI());
+      // Get next edge of the face.
+      curHE = curHE->getNext();
+    } while (curHE != startHE);
+  }
+
+  // Debugging
+  for (auto& face : convexification) {
+    for (int vertexI : face) {
+      std::cout << vertexI << " ";
+    }
+    std::cout << "\n";
+  }
+  std::cout << "\n";
+
   return convexification;
 }
 

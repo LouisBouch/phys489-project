@@ -6,7 +6,7 @@
 utils::DCEL::Face::Face(HalfEdge* outerEdge) : outerEdge(outerEdge) {}
 
 ////////////////////////////////////////////////////////////
-const utils::DCEL::HalfEdge* utils::DCEL::Face::getOuterEdge() const {
+utils::DCEL::HalfEdge* utils::DCEL::Face::getOuterEdge() {
   return outerEdge;
 }
 

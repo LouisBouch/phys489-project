@@ -6,31 +6,34 @@
 utils::DCEL::HalfEdge::HalfEdge(Vertex* origin, HalfEdge* twin, HalfEdge* next,
                                 HalfEdge* prev, Face* incidentFace)
     : origin(origin), twin(twin), next(next), prev(prev),
-      incidentFace(incidentFace) {}
+      incidentFace(incidentFace), candidate(true) {}
 ////////////////////////////////////////////////////////////
-const utils::DCEL::Vertex* utils::DCEL::HalfEdge::getOrigin() const {
+utils::DCEL::Vertex* utils::DCEL::HalfEdge::getOrigin() {
   return origin;
 }
 ////////////////////////////////////////////////////////////
-const utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getTwin() const {
+utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getTwin() {
   return twin;
 }
 ////////////////////////////////////////////////////////////
-const utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getNext() const {
+utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getNext() {
   return next;
 }
 ////////////////////////////////////////////////////////////
-const utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getPrev() const {
+utils::DCEL::HalfEdge* utils::DCEL::HalfEdge::getPrev() {
   return prev;
 }
 ////////////////////////////////////////////////////////////
-const utils::DCEL::Face* utils::DCEL::HalfEdge::getIncidentFace() const {
+utils::DCEL::Face* utils::DCEL::HalfEdge::getIncidentFace() {
   return incidentFace;
 }
 ////////////////////////////////////////////////////////////
-const utils::DCEL::Vertex* utils::DCEL::HalfEdge::getDestination() const {
+utils::DCEL::Vertex* utils::DCEL::HalfEdge::getDestination() {
   return twin ? twin->origin : nullptr;
 }
+////////////////////////////////////////////////////////////
+bool utils::DCEL::HalfEdge::isCandidate() const { return candidate; }
+
 ////////////////////////////////////////////////////////////
 void utils::DCEL::HalfEdge::setOrigin(Vertex* origin) { this->origin = origin; }
 ////////////////////////////////////////////////////////////
@@ -42,4 +45,8 @@ void utils::DCEL::HalfEdge::setPrev(HalfEdge* prev) { this->prev = prev; }
 ////////////////////////////////////////////////////////////
 void utils::DCEL::HalfEdge::setIncidentFace(Face* face) {
   this->incidentFace = face;
+}
+////////////////////////////////////////////////////////////
+void utils::DCEL::HalfEdge::setCandidate(bool candidate) {
+  this->candidate = candidate;
 }
