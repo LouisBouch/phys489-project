@@ -1,6 +1,5 @@
 #pragma once
 
-#define SAT true
 #include "env/Environment.hpp"
 #include "env/bodies/Polygon.hpp"
 #include "physics/collision/Collision.hpp"

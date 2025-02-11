@@ -23,16 +23,14 @@ physics::collision::ColDetector::findCollisions() {
   // Check for collisions between each pair of polygons.
   for (int i = 0; i < nbPoly - 1; i++) {
     for (int j = i + 1; j < nbPoly; j++) {
-      // If no collision occurs, skip. (Either SAT collision detection or
-      // edge-edge)
-      if (SAT) {
-        if (!testSATConcave(polygons[i], polygons[j])) {
-          continue;
-        }
-      } else {
-        if (!testEdgeCollisions(polygons[i], polygons[j])) {
-          continue;
-        }
+      // Broader check first:
+      if (polygons[i].getFurthestVDist() + polygons[j].getFurthestVDist() <
+          (polygons[i].getCentroid() - polygons[j].getCentroid()).norm()) {
+        continue;
+      }
+      // Narrow check
+      if (!testSATConcave(polygons[i], polygons[j])) {
+        continue;
       }
       collisionStatus[i] = 1;
       collisionStatus[j] = 1;

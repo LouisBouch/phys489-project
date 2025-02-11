@@ -1,5 +1,4 @@
 #include "env/bodies/Polygon.hpp"
-#include "SFML/System/Vector2.hpp"
 #include "physics/forces/Force.hpp"
 #include "utils/geo/geoConvex.hpp"
 #include "utils/geo/geoUtils.hpp"
@@ -22,7 +21,7 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       triangulation(utils::geo::triangulate(vertices)),
       globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid),
       id(id), moment(findMoment()),
-      convexification(utils::geo::convexify(vertices, triangulation)) {
+      convexification(utils::geo::convexify(vertices, triangulation)), furthestVDist(findFurthestVDist()) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -254,6 +253,9 @@ double env::bodies::Polygon::findMoment() {
 double env::bodies::Polygon::getMoment() { return moment; }
 
 ////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getFurthestVDist() { return furthestVDist; }
+
+////////////////////////////////////////////////////////////
 std::unordered_map<physics::forces::ForceSource, physics::forces::Force>&
 env::bodies::Polygon::getForceSources() {
   return forces;
@@ -262,4 +264,8 @@ env::bodies::Polygon::getForceSources() {
 const std::vector<std::vector<int>>&
 env::bodies::Polygon::getConvexDecomp() const {
   return convexification;
+}
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::findFurthestVDist() {
+  return (getGlobalVertices().colwise() - centroid).colwise().norm().maxCoeff();
 }

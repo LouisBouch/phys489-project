@@ -240,6 +240,13 @@ public:
    */
   double getMoment();
 
+  /**
+   * @brief Get furthest ditance from vertex to centroid.
+   *
+   * @return Furthest ditance from vertex to centroid.
+   */
+  double getFurthestVDist();
+
 private:
   int id;                   //< ID of polygon to help identify it.
   bool convex;              //< True if convex polygon, false otherwise.
@@ -272,7 +279,8 @@ private:
   mutable double
       lastRot; //< Rotation of centroid after last call to getGlobalVertices.
   std::unordered_map<physics::forces::ForceSource, physics::forces::Force>
-      forces; // Map of forces acting on the plygon.
+      forces;           // Map of forces acting on the plygon.
+  double furthestVDist; //< Furthest distance between centroid and a vertex.
 
   /**
    * @brief Finds the centroid of the polygon.
@@ -317,5 +325,12 @@ private:
    * @return Moment of inertia.
    */
   double findMoment();
+
+  /**
+   * @brief Finds the furthest distance between a vertex and the centroid.
+   *
+   * @return The furthest ditance.
+   */
+  double findFurthestVDist();
 };
 } // namespace env::bodies
