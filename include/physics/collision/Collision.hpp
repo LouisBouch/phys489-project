@@ -17,18 +17,18 @@ public:
    *
    * @param p1 First colliding polygon. (Reference)
    * @param p2 Second colliding polygon. (Incident)
-   * @param t1 Triangle on the reference polygon where collision occured.
-   * @param t2 Triangle on the incident polygon where collision occured.
+   * @param subP1 Sub polygon on the reference polygon where collision occured.
+   * @param subP2 Sub polygon on the incident polygon where collision occured.
    * @param n Collision normal. (On reference polygon)
    * @param depth Collision depth.
-   * @param refEdgeTi Reference edge where collision occured.
+   * @param refEdgePi Reference edge where collision occured.
    *
    * @return Valid collision if one occurs given the parameters.
    */
   static std::optional<Collision>
-  create(const env::bodies::Polygon& p1, const Eigen::Vector3i& t1,
-         const env::bodies::Polygon& p2, const Eigen::Vector3i& t2,
-         const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgeTi);
+  create(const env::bodies::Polygon& p1, const std::vector<int>& subP1,
+         const env::bodies::Polygon& p2, const std::vector<int>& subP2,
+         const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePi);
   /**
    * @brief Gets the first polygon involved in the collision.
    *
@@ -62,16 +62,16 @@ public:
 
 private:
   std::array<int, 2>
-      refEdgeTi; //< Indices of triangle vertices of edge where collision
+      refEdgePi; //< Indices of sub polygon vertices of edge where collision
                  // occured on reference polygon. Actual polygon vertex index
-                 // can be obtained with t1[refEdge[0]]. (Along the ccw
+                 // can be obtained with subP1[refEdge[0]]. (Along the ccw
                  // direction.)
   const env::bodies::Polygon& p1; //< First colliding polygon. (Reference)
   const env::bodies::Polygon& p2; //< Second colliding polygon. (Incident)
-  const Eigen::Vector3i&
-      t1; //< Triangle on the reference plygon where collision occured.
-  const Eigen::Vector3i&
-      t2; //< Triangle on the incident plygon where collision occured.
+  const std::vector<int>&
+      subP1; //< Sub polygon on the reference plygon where collision occured.
+  const std::vector<int>&
+      subP2; //< Sub polygon on the incident plygon where collision occured.
   Eigen::Vector2d n; //< Collision normal. (Lies on p1)
   double depth;      //< Collision depth.
   std::vector<Eigen::Vector2d>
@@ -83,15 +83,17 @@ private:
    *
    * @param p1 First colliding polygon. (Reference)
    * @param p2 Second colliding polygon. (Incident)
-   * @param t1 Triangle on the reference polygon where collision occured.
-   * @param t2 Triangle on the incident polygon where collision occured.
+   * @param subP1 Sub polygon on the reference polygon where collision occured.
+   * @param subP2 Sub polygon on the incident polygon where collision occured.
    * @param n Collision normal. (On reference polygon)
    * @param depth Collision depth.
-   * @param refEdgeTi Reference edge where collision occured.
+   * @param refEdgePi Reference edge where collision occured.
+   * @param manifold Contact manifold of the collision.
    */
-  Collision(const env::bodies::Polygon& p1, const Eigen::Vector3i& t1,
-            const env::bodies::Polygon& p2, const Eigen::Vector3i& t2,
-            const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgeTi,
+  Collision(const env::bodies::Polygon& p1, const std::vector<int>& subP1,
+            const env::bodies::Polygon& p2, const std::vector<int>& subP2,
+            const Eigen::Vector2d& n, double depth,
+            std::array<int, 2> refEdgePi,
             std::vector<Eigen::Vector2d> manifold);
   /**
    * @brief Obtains the incident edge of the collision.
@@ -100,17 +102,19 @@ private:
    * edge of polygon)
    */
   static std::optional<std::vector<Eigen::Vector2d>>
-  findIncEdge(const env::bodies::Polygon& p1, const Eigen::Vector3i& t1,
-              const env::bodies::Polygon& p2, const Eigen::Vector3i& t2,
-              const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgeTi);
+  findIncEdge(const env::bodies::Polygon& p1, const std::vector<int>& subP1,
+              const env::bodies::Polygon& p2, const std::vector<int>& subP2,
+              const Eigen::Vector2d& n, double depth,
+              std::array<int, 2> refEdgePi);
   /**
    * @brief Obtains the contact manifold of the intersecting polygons.
    *
    * @return Contact manifold of the collision.
    */
   static std::optional<std::vector<Eigen::Vector2d>>
-  findManifold(const env::bodies::Polygon& p1, const Eigen::Vector3i& t1,
-               const env::bodies::Polygon& p2, const Eigen::Vector3i& t2,
-               const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgeTi);
+  findManifold(const env::bodies::Polygon& p1, const std::vector<int>& subP1,
+               const env::bodies::Polygon& p2, const std::vector<int>& subP2,
+               const Eigen::Vector2d& n, double depth,
+               std::array<int, 2> refEdgeTi);
 };
 } // namespace physics::collision

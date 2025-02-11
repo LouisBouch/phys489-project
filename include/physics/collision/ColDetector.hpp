@@ -71,15 +71,15 @@ private:
    *
    * @param p1 First polygon.
    * @param p2 Second polygon.
-   * @param t1 First triangle indices.
-   * @param t2 Second triangle indices.
+   * @param subP1 First sub polygon indices.
+   * @param subP2 Second sub polygon indices.
    * @param ps1 Points of the first triangle.
    * @param ps2 Points of the second triangle.
    *
    * @return True if a collision is present.
    */
   bool subtestSATTria(env::bodies::Polygon& p1, env::bodies::Polygon& p2,
-                      const Eigen::Vector3i& t1, const Eigen::Vector3i& t2,
+                      const std::vector<int>& subP1, const std::vector<int>& subP2,
                       const Eigen::Matrix2Xd& ps1, const Eigen::Matrix2Xd& ps2);
 
   /**
@@ -92,14 +92,14 @@ private:
    * @param n Normal of collision vector.
    * @param refEdge Valid edge where collision is occuring.
    * @param vs
-   * @param t Reference triangle indices.
+   * @param subP Reference sub polygon indices.
    *
    * @return Whether a SA was found.
    *
    */
   bool SATHelper(double& minDepth, const Eigen::Matrix2Xd& ps1, const Eigen::Matrix2Xd& ps2,
                  Eigen::Vector2d& n, std::array<int, 2>& refEdge,
-                 const Eigen::Matrix2Xd& vs, const Eigen::Vector3i& t);
+                 const Eigen::Matrix2Xd& vs, const std::vector<int>& subP);
 };
 
 } // namespace physics::collision

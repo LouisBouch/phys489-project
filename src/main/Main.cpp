@@ -80,19 +80,20 @@ int main() {
   //     Eigen::MatrixXd{{200, 150}, {200, 250}, {100, 250}}.transpose(),
   //     35 / 360.0 * (2 * M_PI), 0);
   //
-  env::bodies::Square s1(Eigen::Vector2d{150, 200}, 100, 0, 1, {10, 10});
-  // env::bodies::Square s2(Eigen::Vector2d{100, 200}, 100,
+  env::bodies::Square s1(Eigen::Vector2d{850, 200}, 100);
+  // env::bodies::Square s2(Eigen::Vector2d{800, 400}, 100,
   //                        45.0 / 360 * (2 * M_PI));
+  env::bodies::Square s3(Eigen::Vector2d{925, 275}, 100);
 
   // Create environment
   env::Environment simEnv;
-  // simEnv.addPolygon(t7);
-  // simEnv.addPolygon(s2);
   simEnv.addPolygon(t1);
   simEnv.addPolygon(c1);
   simEnv.addPolygon(c2);
   simEnv.addPolygon(c3);
   simEnv.addPolygon(c4);
+  simEnv.addPolygon(s1);
+  simEnv.addPolygon(s3);
 
   // Create physics engine
   physics::PhysicsEngine engine(0.01);
