@@ -66,7 +66,7 @@ bool physics::collision::ColDetector::testEdgeCollisions(
   return false;
 }
 ////////////////////////////////////////////////////////////
-// TODO: Ensure each vertx can only collide with 1 triangle.
+// TODO: Find fix for collisions happenning between multiple inner polygons.
 bool physics::collision::ColDetector::testSATConcave(env::bodies::Polygon& p1,
                                                      env::bodies::Polygon& p2) {
   bool collided = false;

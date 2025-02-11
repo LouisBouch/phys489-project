@@ -21,6 +21,12 @@ public:
    * @return Outer half-edge.
    */
   HalfEdge* getOuterEdge();
+  /**
+   * @brief Gets the face id.
+   *
+   * @return Face id.
+   */
+  int getId();
 
   /**
    * @brief Gets the outer edge.
@@ -28,8 +34,15 @@ public:
    * @return Outer half-edge.
    */
   void setOuterEdge(HalfEdge* outerEdge);
+  /**
+   * @brief Sets the face id.
+   *
+   * @param id Face id.
+   */
+  void setId(int id);
 
 private:
+  int id;              //< ID of the face.
   HalfEdge* outerEdge; //< Half-edge that bounds the face.
 };
 } // namespace utils::DCEL

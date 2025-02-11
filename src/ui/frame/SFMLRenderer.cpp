@@ -33,25 +33,23 @@ void ui::frame::SFMLRenderer::setG2d(
 void ui::frame::SFMLRenderer::drawEnv() {
   env::Environment& env = *engine.getEnv();
   std::vector<env::bodies::Polygon>& polygons = env.getPolygons();
-  // Iterate over polygons triangulation and draw them
-  Eigen::Matrix2Xd triVertices(2, 3);
+  // Iterate over polygons convex decomposition and draw each sub polygon.
   for (env::bodies::Polygon& p : polygons) {
     // Set color depending on collision status.
     sf::Color col =
         p.isColliding() ? sf::Color(255, 0, 0, 150) : sf::Color(0, 255, 0, 150);
-    const Eigen::Matrix3Xi& tris = p.getTriangulation();
+    const std::vector<std::vector<int>>& conPolys = p.getConvexDecomp();
     const Eigen::Matrix2Xd& gv = p.getGlobalVertices();
-    for (int tri = 0; tri < p.getNbVertices() - 2; tri++) {
-      // Indices of each vertex of the triangle.
-      int a = tris.col(tri)[0];
-      int b = tris.col(tri)[1];
-      int c = tris.col(tri)[2];
-      // Get real world vertices
-      triVertices.col(0) = gv.col(a);
-      triVertices.col(1) = gv.col(b);
-      triVertices.col(2) = gv.col(c);
-      // Draw triangle
-      fillShape(triVertices, col);
+    for (int convP = 0; convP < conPolys.size(); convP++) {
+      Eigen::Matrix2Xd convPVertices(2, conPolys[convP].size());
+      for (int i = 0; i < conPolys[convP].size(); i++) {
+        // Index of the vertex.
+        int vIndex = conPolys[convP][i];
+        // Position in space of the vertex.
+        convPVertices.col(i) = gv.col(vIndex);
+      }
+      // Draw convex polygon.
+      fillShape(convPVertices, col);
     }
   }
   env.unlockPolygons();

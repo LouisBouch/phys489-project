@@ -2,7 +2,6 @@
 #include "utils/DCEL/DCEL.hpp"
 #include "utils/DCEL/HalfEdge.hpp"
 #include "utils/geo/geoUtils.hpp"
-#include <codecvt>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <list>
@@ -21,14 +20,18 @@ utils::geo::convexify(const Eigen::Matrix2Xd& vertices,
     }
   }
   // Creates a DCEL from the triangulation.
-  utils::DCEL::DCEL d = utils::DCEL::DCEL::makeDCEL(convexification, vertices.cols());
+  utils::DCEL::DCEL d =
+      utils::DCEL::DCEL::makeDCEL(convexification, vertices.cols());
 
   // Convexifies the polygon by going through its DCEL edges and removing the
   // ones that can be removed.
-  for (const auto& [key, edge] : d.getHalfEdges()) {
+  auto& halfEdgesMap = d.getHalfEdges();
+  for (auto it = halfEdgesMap.begin(); it != halfEdgesMap.end();) {
+    const auto& [key, edge] = *it;
     // If twin edge has been checked and determined to not be a candidate, then
     // don't check this one.
-    if (!edge->getTwin()->isCandidate()) {
+    if (!edge->isCandidate() || !edge->getTwin()->isCandidate()) {
+      it++;
       continue;
     }
 
@@ -43,6 +46,7 @@ utils::geo::convexify(const Eigen::Matrix2Xd& vertices,
     // the edge without indtroducing concavity.
     if (signedArea < 0) {
       edge->setCandidate(false);
+      it++;
       continue;
     }
 
@@ -55,16 +59,26 @@ utils::geo::convexify(const Eigen::Matrix2Xd& vertices,
     // the edge without indtroducing concavity.
     if (signedArea < 0) {
       edge->setCandidate(false);
+      it++;
       continue;
     }
     // If both angles were less than 180 degrees, remove the half-edge and its
-    // twin.
+    // twin, but update the iterator first to ensure it doesn't get deleted with
+    // the edge.
+    it++;
+    if (it != halfEdgesMap.end()) {
+      // If not the last element, make sure the next element is not the twin.
+      const auto& [keyN, _] = *it;
+      if (keyN.second == key.first && keyN.first == key.second) {
+        it++;
+      }
+    }
     d.removeEdge(key);
   }
 
   // From the list of faces, create the final convexification.
   convexification.clear();
-  for (const std::unique_ptr<utils::DCEL::Face>& face : d.getFaces()) {
+  for (const auto& [key, face] : d.getFaces()) {
     // Add face to convexification.
     convexification.push_back(std::vector<int>());
     utils::DCEL::HalfEdge* startHE = face->getOuterEdge();
@@ -77,13 +91,13 @@ utils::geo::convexify(const Eigen::Matrix2Xd& vertices,
   }
 
   // Debugging
-  for (auto& face : convexification) {
-    for (int vertexI : face) {
-      std::cout << vertexI << " ";
-    }
-    std::cout << "\n";
-  }
-  std::cout << "\n";
+  // for (auto& face : convexification) {
+  //   for (int vertexI : face) {
+  //     std::cout << vertexI << " ";
+  //   }
+  //   std::cout << "\n";
+  // }
+  // std::cout << "\n";
 
   return convexification;
 }

@@ -19,22 +19,12 @@ struct PairHash {
     return h1 ^ (31 * h2);
   }
 };
-// Hash and equality for a unique ptr.
-struct uPtrHash {
-  template <typename T>
-  std::size_t operator()(const std::unique_ptr<T>& ptr) const {
-    return std::hash<T*>{}(ptr.get());
-  }
-};
-struct uPtrEq {
-  template <typename T>
-  bool operator()(const std::unique_ptr<T>& l,
-                         const std::unique_ptr<T>& r) const {
-    return l.get() == r.get();
-  }
-};
 class DCEL {
 public:
+  /**
+   * @brief Default constructor
+   */
+  DCEL();
   /**
    * @brief Adds vertex to DCEL.
    *
@@ -98,14 +88,15 @@ public:
    *
    * @return Faces of the DCEL.
    */
-  const std::unordered_set<std::unique_ptr<Face>, uPtrHash, uPtrEq>& getFaces() const;
+  const std::unordered_map<int, std::unique_ptr<Face>>& getFaces() const;
 
 private:
+  int curFaceId;//< ID to be given to the next face.
   std::unordered_map<int, std::unique_ptr<Vertex>>
       vertices; //< List of vertices in the DCEL.
   std::unordered_map<std::pair<int, int>, std::unique_ptr<HalfEdge>, PairHash>
       halfEdges; //< List of halfedges in the DCEL.
-  std::unordered_set<std::unique_ptr<Face>, uPtrHash, uPtrEq>
+  std::unordered_map<int, std::unique_ptr<Face>>
       faces; //< List of faces in the DCEL.
 };
 } // namespace utils::DCEL

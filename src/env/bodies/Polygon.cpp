@@ -18,9 +18,11 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
       localVertices(findLocalVertices(vertices)),
-      convex(utils::geo::findConvexity(vertices)), triangulation(utils::geo::triangulate(vertices)),
+      convex(utils::geo::findConvexity(vertices)),
+      triangulation(utils::geo::triangulate(vertices)),
       globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid),
-      id(id), moment(findMoment()), convexification(utils::geo::convexify(vertices, triangulation)) {
+      id(id), moment(findMoment()),
+      convexification(utils::geo::convexify(vertices, triangulation)) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -182,7 +184,6 @@ void env::bodies::Polygon::addAngV(double angV) { this->angV += angV; }
 ////////////////////////////////////////////////////////////
 bool env::bodies::Polygon::isConvex() const { return convex; }
 
-
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::addPos(const Eigen::Vector2d& pos) {
   centroid += pos;
@@ -256,4 +257,9 @@ double env::bodies::Polygon::getMoment() { return moment; }
 std::unordered_map<physics::forces::ForceSource, physics::forces::Force>&
 env::bodies::Polygon::getForceSources() {
   return forces;
+}
+////////////////////////////////////////////////////////////
+const std::vector<std::vector<int>>&
+env::bodies::Polygon::getConvexDecomp() const {
+  return convexification;
 }

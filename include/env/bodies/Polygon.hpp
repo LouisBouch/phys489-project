@@ -175,6 +175,14 @@ public:
   const Eigen::Matrix3Xi& getTriangulation() const;
 
   /**
+   * @brief Gets convex decomposition of polygon.
+   *
+   * @return An array of arrays of indices containing the indices of the vertex
+   * forming the convex polygons of the full polygon.
+   */
+  const std::vector<std::vector<int>>& getConvexDecomp() const;
+
+  /**
    * @brief Gets ID of polygon.
    *
    * @return Polygon id.
@@ -259,7 +267,7 @@ private:
                     // getGlobalVertices.
   std::vector<std::vector<int>>
       convexification; //< Convex polygons making up the polygon. Stores index
-                       //of vertices making it up.
+                       // of vertices making it up.
 
   mutable double
       lastRot; //< Rotation of centroid after last call to getGlobalVertices.
@@ -301,7 +309,6 @@ private:
    * @return Position of vertices realtive to centroid.
    */
   Eigen::Matrix2Xd findLocalVertices(const Eigen::Matrix2Xd& vertices);
-
 
   /**
    * @brief Finds the moment of inertia of the polygon about its centroid. Uses

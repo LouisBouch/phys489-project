@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+////////////////////////////////////////////////////////////
+utils::DCEL::DCEL::DCEL() : curFaceId(0) {}
 
 ////////////////////////////////////////////////////////////
 utils::DCEL::Vertex* utils::DCEL::DCEL::addVertex(int vertexI) {
@@ -79,8 +81,7 @@ void utils::DCEL::DCEL::removeEdge(std::pair<int, int> vs) {
   } while (curHE != startHE);
 
   // Delete the right face.
-    std::cout << (faces.find(std::make_unique<Face>(*rightFace))==faces.end()) << "\n";
-  faces.erase(faces.find(std::make_unique<Face>(*rightFace)));
+  faces.erase(rightFace->getId());
 
   // Update edges that are pointing to the soon to be deleted edges.
   he->getPrev()->setNext(heTwin->getNext());
@@ -99,7 +100,9 @@ utils::DCEL::Face* utils::DCEL::DCEL::addFace() {
   // Create the face and add it to the map.
   auto newF = std::make_unique<Face>();
   Face* newFP = newF.get();
-  faces.insert(std::move(newF));
+  faces[curFaceId] = std::move(newF);
+  newFP->setId(curFaceId);
+  curFaceId++;
 
   return newFP;
 }
@@ -119,8 +122,7 @@ utils::DCEL::DCEL::getHalfEdges() const {
 }
 
 ////////////////////////////////////////////////////////////
-const std::unordered_set<std::unique_ptr<utils::DCEL::Face>,
-                         utils::DCEL::uPtrHash, utils::DCEL::uPtrEq>&
+const std::unordered_map<int, std::unique_ptr<utils::DCEL::Face>>&
 utils::DCEL::DCEL::getFaces() const {
   return faces;
 }
@@ -172,6 +174,7 @@ utils::DCEL::DCEL::makeDCEL(const std::vector<std::vector<int>>& faces,
   HalfEdge* firstHE = d.getHalfEdges().find({0, nbVertices - 1})->second.get();
   firstHE->setNext(prevHE);
   prevHE->setPrev(firstHE);
+
 
   return d;
 }
