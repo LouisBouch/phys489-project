@@ -180,7 +180,6 @@ bool utils::geo::findConvexity(const Eigen::Matrix2Xd& vertices) {
     // Check for angle > 180 deg.
     double cross = v1[0] * v2[1] - v2[0] * v1[1];
     if (cross < 0) {
-      std::cout << "concave" << "\n";
       return false;
     }
     if (std::abs(cross) - 1e-6 < 0) {

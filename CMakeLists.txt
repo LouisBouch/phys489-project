@@ -19,6 +19,7 @@ add_executable(${PROJECT_NAME}
   src/physics/forces/Force.cpp
   src/physics/integrator.cpp
   src/physics/collision/ColDetector.cpp
+  src/physics/collision/ColResponse.cpp
   src/physics/collision/Collision.cpp
   src/utils/geo/geoUtils.cpp
   src/utils/geo/geoConvex.cpp

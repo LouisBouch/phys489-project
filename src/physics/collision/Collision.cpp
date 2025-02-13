@@ -10,35 +10,32 @@
 //////////////////////////////FACTORY//////////////////////////////
 std::optional<physics::collision::Collision>
 physics::collision::Collision::create(const env::bodies::Polygon& p1,
-                                      const std::vector<int>& subP1,
+                                      const int subP1I,
                                       const env::bodies::Polygon& p2,
-                                      const std::vector<int>& subP2,
+                                      const int subP2I,
                                       const Eigen::Vector2d& n, double depth,
-                                      std::array<int, 2> refEdgePi) {
+                                      std::array<int, 2> refEdgePI) {
   std::optional<std::vector<Eigen::Vector2d>> mani =
-      findManifold(p1, subP1, p2, subP2, n, depth, refEdgePi);
+      findManifold(p1, subP1I, p2, subP2I, n, depth, refEdgePI);
   // Check if valid manifold exists.
   if (!mani.has_value()) {
     return std::nullopt;
   }
 
-  return Collision(p1, subP1, p2, subP2, n, depth, refEdgePi, mani.value());
+  return Collision(p1, subP1I, p2, subP2I, n, depth, refEdgePI, mani.value());
 }
 //////////////////////////////CONSTRUCTORS//////////////////////////////
 physics::collision::Collision::Collision(const Collision& col)
-    : Collision(col.p1, col.subP1, col.p2, col.subP2, col.n, col.depth,
-                col.refEdgePi, col.manifold) {}
+    : Collision(col.p1, col.subP1I, col.p2, col.subP2I, col.n, col.depth,
+                col.refEdgePI, col.manifold) {}
 
 ////////////////////////////////////////////////////////////
-physics::collision::Collision::Collision(const env::bodies::Polygon& p1,
-                                         const std::vector<int>& subP1,
-                                         const env::bodies::Polygon& p2,
-                                         const std::vector<int>& subP2,
-                                         const Eigen::Vector2d& n, double depth,
-                                         std::array<int, 2> refEdgePi,
-                                         std::vector<Eigen::Vector2d> manifold)
+physics::collision::Collision::Collision(
+    const env::bodies::Polygon& p1, int subP1I, const env::bodies::Polygon& p2,
+    int subP2I, const Eigen::Vector2d& n, double depth,
+    std::array<int, 2> refEdgePI, std::vector<Eigen::Vector2d> manifold)
     : p1(p1), p2(p2), n(n.normalized()), depth(depth), manifold(manifold),
-      refEdgePi(refEdgePi), subP1(subP1), subP2(subP2) {}
+      refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I) {}
 //////////////////////////////GETTERS//////////////////////////////
 const env::bodies::Polygon&
 physics::collision::Collision::getFirstPolygon() const {
@@ -68,14 +65,17 @@ physics::collision::Collision::getManifold() const {
 //////////////////////////////PRIVATE METHODS//////////////////////////////
 std::optional<std::vector<Eigen::Vector2d>>
 physics::collision::Collision::findManifold(
-    const env::bodies::Polygon& p1, const std::vector<int>& subP1,
-    const env::bodies::Polygon& p2, const std::vector<int>& subP2,
-    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePi) {
+    const env::bodies::Polygon& p1, int subP1I,
+    const env::bodies::Polygon& p2, int subP2I,
+    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePI) {
   const Eigen::Matrix2Xd& vs1 = p1.getGlobalVertices();
   const Eigen::Matrix2Xd& vs2 = p2.getGlobalVertices();
 
+  const std::vector<int>& subP1 = p1.getConvexDecomp()[subP1I];
+  const std::vector<int>& subP2 = p2.getConvexDecomp()[subP2I];
+    
   std::optional<std::vector<Eigen::Vector2d>> maniOpt =
-      findIncEdge(p1, subP1, p2, subP2, n, depth, refEdgePi);
+      findIncEdge(p1, subP1I, p2, subP2I, n, depth, refEdgePI);
   // Check if the incident edge is invalid.
   if (!maniOpt.has_value()) {
     return std::nullopt;
@@ -86,17 +86,17 @@ physics::collision::Collision::findManifold(
   // std::cout << mani[1] << "\n\n";
   //
   // std::cout << "ref edge: \n";
-  // std::cout << vs1.col(subP1[refEdgePi[0]]) << "\n";
-  // std::cout << vs1.col(subP1[refEdgePi[1]]) << "\n\n";
+  // std::cout << vs1.col(subP1[refEdgePI[0]]) << "\n";
+  // std::cout << vs1.col(subP1[refEdgePI[1]]) << "\n\n";
 
   // Now clip the manifold.
   for (int i = 0; i < 2; i++) {
     // Point on the half plane clipping line.
-    Eigen::Vector2d halfEdgeP = vs1.col(subP1[refEdgePi[i]]);
+    Eigen::Vector2d halfEdgeP = vs1.col(subP1[refEdgePI[i]]);
     // Half plane normal.
     double sign = i == 0 ? -1 : 1;
     Eigen::Vector2d nHS =
-        sign * (vs1.col(subP1[refEdgePi[1]]) - vs1.col(subP1[refEdgePi[0]]));
+        sign * (vs1.col(subP1[refEdgePI[1]]) - vs1.col(subP1[refEdgePI[0]]));
     // Clip each point in the manifold.
     for (int mi = 0; mi < 2; mi++) {
       if (!utils::geo::isAboveLine(mani[mi], nHS, halfEdgeP)) {
@@ -113,10 +113,10 @@ physics::collision::Collision::findManifold(
   }
   // For the final clip, remove points above the reference edge.
   Eigen::Vector2d nf = utils::geo::rotatePoints(
-      vs1.col(subP1[refEdgePi[1]]) - vs1.col(subP1[refEdgePi[0]]), -M_PI / 2.0);
+      vs1.col(subP1[refEdgePI[1]]) - vs1.col(subP1[refEdgePI[0]]), -M_PI / 2.0);
   // Remove points in the manifold above this line.
   for (int mi = 0; mi < 2; mi++) {
-    if (utils::geo::isAboveLine(mani[mi], nf, vs1.col(subP1[refEdgePi[0]]))) {
+    if (utils::geo::isAboveLine(mani[mi], nf, vs1.col(subP1[refEdgePI[0]]))) {
       mani.erase(mani.begin() + mi);
     }
   }
@@ -125,12 +125,16 @@ physics::collision::Collision::findManifold(
 ////////////////////////////////////////////////////////////
 std::optional<std::vector<Eigen::Vector2d>>
 physics::collision::Collision::findIncEdge(
-    const env::bodies::Polygon& p1, const std::vector<int>& subP1,
-    const env::bodies::Polygon& p2, const std::vector<int>& subP2,
-    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePi) {
+    const env::bodies::Polygon& p1, int subP1I,
+    const env::bodies::Polygon& p2, int subP2I,
+    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePI) {
   const Eigen::Matrix2Xd& vs1 = p1.getGlobalVertices();
   std::vector<Eigen::Vector2d> incEdge;
   const Eigen::Matrix2Xd& vs2 = p2.getGlobalVertices();
+
+  const std::vector<int>& subP1 = p1.getConvexDecomp()[subP1I];
+  const std::vector<int>& subP2 = p2.getConvexDecomp()[subP2I];
+
   int furthestVPi = 0; // Which edge on the sub polygon is the furthest edge
                        // along the normal.
   int maxDepth = 0;
@@ -139,7 +143,7 @@ physics::collision::Collision::findIncEdge(
   for (int i = 0; i < subP2.size(); i++) {
     // To ensure we get the distance from the edge to the vertex, we must
     // subtract from the vertex the values of a point on the edge.
-    const Eigen::Vector2d& v = vs2.col(subP2[i]) - vs1.col(subP1[refEdgePi[0]]);
+    const Eigen::Vector2d& v = vs2.col(subP2[i]) - vs1.col(subP1[refEdgePI[0]]);
     double vDepth = utils::geo::projectPointsMagnitude(v, n)[0];
     if (vDepth < maxDepth) {
       maxDepth = vDepth;
@@ -148,8 +152,8 @@ physics::collision::Collision::findIncEdge(
   }
   // From the furthest point, find the incident edge. (Edge attached to furthest
   // vertex on incident sub polygon that is most aligned with reference edge.)
-  Eigen::Vector2d refEdge = vs1.col(subP1[refEdgePi[1]]) -
-                            vs1.col(subP1[refEdgePi[0]]); // Reference edge.
+  Eigen::Vector2d refEdge = vs1.col(subP1[refEdgePI[1]]) -
+                            vs1.col(subP1[refEdgePI[0]]); // Reference edge.
   int furthestVi = subP2[furthestVPi];
   // First possible incident edge.
   int furthestNextVi = subP2[(furthestVPi + 1) % subP2.size()];
@@ -177,3 +181,8 @@ physics::collision::Collision::findIncEdge(
   }
   return incEdge;
 }
+////////////////////////////////////////////////////////////
+const int physics::collision::Collision::getSubP1I() const { return subP1I; }
+
+////////////////////////////////////////////////////////////
+const std::array<int, 2>& physics::collision::Collision::getRefEdgePI() const { return refEdgePI; }

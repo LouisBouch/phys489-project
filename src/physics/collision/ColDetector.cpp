@@ -4,7 +4,6 @@
 #include "utils/geo/geoUtils.hpp"
 #include <array>
 #include <cstdint>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -104,7 +103,7 @@ bool physics::collision::ColDetector::testSATConcave(env::bodies::Polygon& p1,
       }
 
       // Check for collision between the sub polyguns.
-      if (subtestSATTria(p1, p2, subP1, subP2, ps1, ps2)) {
+      if (subtestSATTria(p1, p2, subP1I, subP2I, ps1, ps2)) {
         collided = true;
       }
     }
@@ -113,12 +112,12 @@ bool physics::collision::ColDetector::testSATConcave(env::bodies::Polygon& p1,
 }
 ////////////////////////////////////////////////////////////
 bool physics::collision::ColDetector::subtestSATTria(
-    env::bodies::Polygon& p1, env::bodies::Polygon& p2,
-    const std::vector<int>& subP1, const std::vector<int>& subP2,
+    env::bodies::Polygon& p1, env::bodies::Polygon& p2, int subP1I, int subP2I,
     const Eigen::Matrix2Xd& ps1, const Eigen::Matrix2Xd& ps2) {
 
   std::array<int, 2> refEdge; // Reference edge of the collision.
-
+  const std::vector<int>& subP1 = p1.getConvexDecomp()[subP1I];
+  const std::vector<int>& subP2 = p2.getConvexDecomp()[subP2I];
   // Get vertices.
   const Eigen::Matrix2Xd& vs1 = p1.getGlobalVertices();
   const Eigen::Matrix2Xd& vs2 = p2.getGlobalVertices();
@@ -147,13 +146,13 @@ bool physics::collision::ColDetector::subtestSATTria(
   // No separating axis found, add the collision.
   if (p1IsReference) {
     std::optional<Collision> col = physics::collision::Collision::create(
-        p1, subP1, p2, subP2, n, minDepth, refEdge);
+        p1, subP1I, p2, subP2I, n, minDepth, refEdge);
     if (col.has_value()) {
       collisions.push_back(col.value());
     }
   } else {
     std::optional<Collision> col = physics::collision::Collision::create(
-        p2, subP2, p1, subP1, n, minDepth, refEdge);
+        p2, subP2I, p1, subP1I, n, minDepth, refEdge);
     if (col.has_value()) {
       collisions.push_back(col.value());
     }

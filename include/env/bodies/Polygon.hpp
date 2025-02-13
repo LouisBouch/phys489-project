@@ -62,7 +62,7 @@ public:
    *
    * @return Area of the polygon.
    */
-  double getArea();
+  double getArea() const;
 
   /**
    * @brief Gets the perimeter of the polygon.
@@ -238,7 +238,7 @@ public:
    *
    * @return The moment of the polygon.
    */
-  double getMoment();
+  double getMoment() const;
 
   /**
    * @brief Get furthest ditance from vertex to centroid.

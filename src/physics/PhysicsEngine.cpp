@@ -1,5 +1,6 @@
 #include "physics/PhysicsEngine.hpp"
 #include "physics/collision/ColDetector.hpp"
+#include "physics/collision/ColResponse.hpp"
 #include "physics/integrator.hpp"
 #include <chrono>
 #include <iostream>
@@ -11,7 +12,8 @@ physics::PhysicsEngine::PhysicsEngine() : physics::PhysicsEngine(0) {}
 ////////////////////////////////////////////////////////////
 physics::PhysicsEngine::PhysicsEngine(double dt)
     : env(nullptr), running(false), dt(dt),
-      colDet(physics::collision::ColDetector()), slowdown(1) {}
+      colDet(physics::collision::ColDetector()), slowdown(1),
+      colRes(collision::ColResponse()) {}
 
 ////////////////////////////////////////////////////////////
 physics::PhysicsEngine::~PhysicsEngine() { joinThread(); }
@@ -43,14 +45,18 @@ void physics::PhysicsEngine::simLoop() {
     }
     // Apply forces on polygons.
     applyForces(*env, dt * slowdown);
-    // Step Environment.
-    stepEnvironment(*env, dt * slowdown);
-    env->addToTotalTime(microDt * slowdown);
 
     // Detect collisions.
     colDet.findCollisions();
 
     // Resolve collisions.
+    if (colDet.getCollisions().size() != 0) {
+      colRes.resolveCollisions(colDet.getCollisions());
+    }
+
+    // Step Environment.
+    stepEnvironment(*env, dt * slowdown);
+    env->addToTotalTime(microDt * slowdown);
   }
 }
 

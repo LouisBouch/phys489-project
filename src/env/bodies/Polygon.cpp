@@ -56,7 +56,7 @@ void env::bodies::Polygon::rotate(double r) {
 }
 
 ////////////////////////////////////////////////////////////
-double env::bodies::Polygon::getArea() { return area; }
+double env::bodies::Polygon::getArea() const { return area; }
 
 ////////////////////////////////////////////////////////////
 double env::bodies::Polygon::getPerimeter() const { return perimeter; }
@@ -250,7 +250,7 @@ double env::bodies::Polygon::findMoment() {
 }
 
 ////////////////////////////////////////////////////////////
-double env::bodies::Polygon::getMoment() { return moment; }
+double env::bodies::Polygon::getMoment() const { return moment; }
 
 ////////////////////////////////////////////////////////////
 double env::bodies::Polygon::getFurthestVDist() { return furthestVDist; }

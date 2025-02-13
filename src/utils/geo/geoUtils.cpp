@@ -159,7 +159,7 @@ utils::geo::interSegLine(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2,
 }
 ////////////////////////////////////////////////////////////
 double utils::geo::cross2D(const Eigen::Vector2d& a, const Eigen::Vector2d& b) {
-  return a.x()*b.y() - a.y()*b.x(); 
+  return a.x()*b.y() - a.y()*b.x();
 }
 ////////////////////////////////////////////////////////////
 int utils::geo::sign(double v) {

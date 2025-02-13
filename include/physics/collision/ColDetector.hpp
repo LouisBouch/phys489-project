@@ -70,16 +70,16 @@ private:
    *
    * @param p1 First polygon.
    * @param p2 Second polygon.
-   * @param subP1 First sub polygon indices.
-   * @param subP2 Second sub polygon indices.
+   * @param subP1I First sub polygon.
+   * @param subP2I Second sub polygon.
    * @param ps1 Points of the first triangle.
    * @param ps2 Points of the second triangle.
    *
    * @return True if a collision is present.
    */
   bool subtestSATTria(env::bodies::Polygon& p1, env::bodies::Polygon& p2,
-                      const std::vector<int>& subP1, const std::vector<int>& subP2,
-                      const Eigen::Matrix2Xd& ps1, const Eigen::Matrix2Xd& ps2);
+                      int subP1I, int subP2I, const Eigen::Matrix2Xd& ps1,
+                      const Eigen::Matrix2Xd& ps2);
 
   /**
    * @brief Helper function for subtestSATTria. Does half the SAT test.
@@ -96,9 +96,10 @@ private:
    * @return Whether a SA was found.
    *
    */
-  bool SATHelper(double& minDepth, const Eigen::Matrix2Xd& ps1, const Eigen::Matrix2Xd& ps2,
-                 Eigen::Vector2d& n, std::array<int, 2>& refEdge,
-                 const Eigen::Matrix2Xd& vs, const std::vector<int>& subP);
+  bool SATHelper(double& minDepth, const Eigen::Matrix2Xd& ps1,
+                 const Eigen::Matrix2Xd& ps2, Eigen::Vector2d& n,
+                 std::array<int, 2>& refEdge, const Eigen::Matrix2Xd& vs,
+                 const std::vector<int>& subP);
 };
 
 } // namespace physics::collision
