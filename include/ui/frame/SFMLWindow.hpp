@@ -86,8 +86,9 @@ private:
    *
    * @param pId Id of the polygon for which the force will be created.
    * @param cursor Current position of the cursor.
+   * @param prevRot Whether to prevent rotation or not.
    */
-  void createForce(int pId, sf::Vector2i cursor);
+  void createForce(int pId, sf::Vector2i cursor, bool prevRot);
 
   /**
    * @brief Deletes the current drag force.

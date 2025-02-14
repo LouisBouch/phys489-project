@@ -76,8 +76,8 @@ void physics::PhysicsEngine::setEnv(env::Environment* env) {
   this->env = env;
 }
 ////////////////////////////////////////////////////////////
-const physics::collision::ColDetector&
-physics::PhysicsEngine::getColDetector() const {
+physics::collision::ColDetector&
+physics::PhysicsEngine::getColDetector() {
   return colDet;
 }
 

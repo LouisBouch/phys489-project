@@ -1,5 +1,6 @@
 #include "env/Environment.hpp"
 #include "env/bodies/Polygon.hpp"
+#include "physics/forces/Force.hpp"
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -20,7 +21,7 @@ env::Environment::Environment(const Environment& env)
 env::Environment::~Environment() {}
 
 ////////////////////////////////////////////////////////////
-void env::Environment::addPolygon(bodies::Polygon& polygon) {
+void env::Environment::addPolygon(bodies::Polygon& polygon, bool grav) {
   polygons.push_back(polygon);
   polygons.back().setId(curId);
   // Remake the hashmap to prevent dangling reference after vector copy.
@@ -28,6 +29,10 @@ void env::Environment::addPolygon(bodies::Polygon& polygon) {
     polyById[polygons[i].getId()] = &polygons[i];
   }
   polyById[curId] = &polygons.back();
+  if (grav) {
+    polygons.back().addForce(physics::forces::ForceSource::Gravity, {0, 0},
+                             {0, -1}, GRAV * polygon.getMass());
+  }
   curId++;
 }
 

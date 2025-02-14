@@ -6,6 +6,8 @@ namespace physics::forces {
 enum class ForceSource {
   UserPull,        //< Created by the user dragging the polygon.
   UserInducedDrag, //< Force used to slow down the polygon.
+  NoRot,           //< "Force" that removes rotation.
+  Gravity,           //< Gravity.
 };
 class Force {
 public:

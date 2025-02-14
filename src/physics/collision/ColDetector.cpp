@@ -199,8 +199,8 @@ bool physics::collision::ColDetector::SATHelper(
 }
 
 ////////////////////////////////////////////////////////////
-const std::vector<physics::collision::Collision>&
-physics::collision::ColDetector::getCollisions() const {
+std::vector<physics::collision::Collision>&
+physics::collision::ColDetector::getCollisions() {
   return collisions;
 }
 

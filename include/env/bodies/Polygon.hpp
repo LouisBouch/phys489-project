@@ -15,7 +15,7 @@ public:
    * @param vertices Vertices of the polygon in COUNTERCLOCKWISE order.
    */
   Polygon(const Eigen::Matrix2Xd& vertices, double rot = 0, double angV = 0,
-          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0}, int id = -1);
+          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0}, int id = -1, double density = 1);
 
   /**
    * @brief Copy constructor.
@@ -247,6 +247,34 @@ public:
    */
   double getFurthestVDist();
 
+  /**
+   * @brief Get density of polygon.
+   *
+   * @return Density of the polygon.
+   */
+  double getDensity() const;
+
+  /**
+   * @brief Gets mass of polygon.
+   *
+   * @return Mass of the polygon.
+   */
+  double getMass() const;
+
+  /**
+   * @brief Get density of polygon.
+   *
+   * @return Density of the polygon.
+   */
+  void setDensity(double density);
+
+  /**
+   * @brief Gets mass of polygon.
+   *
+   * @return Mass of the polygon.
+   */
+  void setMass(double mass);
+
 private:
   int id;                   //< ID of polygon to help identify it.
   bool convex;              //< True if convex polygon, false otherwise.
@@ -268,7 +296,6 @@ private:
                      // the counterclockwise vertex indices of a triangle.
   mutable Eigen::Matrix2Xd
       globalVertices;  //< Array of vertices with respect to global coordinates
-  const double moment; //< Moment of inertia of the polygon about its centroid.
   mutable Eigen::Vector2d
       lastCentroid; //< Position of centroid after last call to
                     // getGlobalVertices.
@@ -281,6 +308,9 @@ private:
   std::unordered_map<physics::forces::ForceSource, physics::forces::Force>
       forces;           // Map of forces acting on the plygon.
   double furthestVDist; //< Furthest distance between centroid and a vertex.
+  double density;       //< Density of the polygon.
+  double mass;          //< Mass of the polygon.
+  double moment; //< Moment of inertia of the polygon about its centroid.
 
   /**
    * @brief Finds the centroid of the polygon.

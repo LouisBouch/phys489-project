@@ -54,7 +54,7 @@ void ui::frame::SFMLRenderer::drawEnv() {
   }
   env.unlockPolygons();
   // Draw contact points of collision manifold.
-  const std::vector<physics::collision::Collision>& cols =
+  std::vector<physics::collision::Collision>& cols =
       engine.getColDetector().getCollisions();
   sf::CircleShape point(2.f);
   // Point representing contact manifold.

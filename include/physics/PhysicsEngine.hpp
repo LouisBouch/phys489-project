@@ -63,7 +63,7 @@ public:
    *
    * @return The collision detector.
    */
-  const collision::ColDetector& getColDetector() const;
+  collision::ColDetector& getColDetector();
 
   /**
    * @brief Getter for delta time.

@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define GRAV 500
+
 namespace env {
 class Environment {
 public:
@@ -40,8 +42,9 @@ public:
    * @brief Adds a polygon to the environment.
    *
    * @param polygon Polygon to introduce in simulation.
+   * @param grav Whether the shape is affected by gravity or not.
    */
-  void addPolygon(bodies::Polygon& polygon);
+  void addPolygon(bodies::Polygon& polygon, bool grav = true);
 
   /**
    * @brief Gets the polygon array. REQUIRES MANUAL UNLOCKING AFTER THE USER IS

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "env/bodies/Polygon.hpp"
 #include "physics/collision/Collision.hpp"
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/src/Core/Matrix.h>
 
 namespace physics::collision {
 class ColResponse {
@@ -20,7 +22,7 @@ public:
    *
    * @param collisions List of collisions to resolve.
    */
-  void resolveCollisions(const std::vector<Collision>& collisions);
+  void resolveCollisions(std::vector<Collision>& collisions);
 
 private:
   bool coupled; //< Whether or not to treat the collision manifold as a coupled
@@ -41,13 +43,28 @@ private:
    * @return An impulse magnitude for each contact point on the contact
    * manifold.
    */
-  std::vector<double> findImpulseMagnitude(const Collision& collision);
+  std::vector<double> findImpulseMagnitude(Collision& collision);
   /**
    * @brief Resolves a single collision.
    *
    * @param collision The collision to be resolved.
    *
    */
-  void resolveCollision(const Collision& collision);
+  void resolveCollision(Collision& collision);
+
+  /**
+   * @brief Applies impulse to contact point.
+   *
+   * @param impulse Impulse magnitude.
+   * @param n Normal of collision.
+   * @param p1 First polygon colliding.
+   * @param p2 Second polygon colliding.
+   * @param r1 Vector from centroid of first polygon to contact point.
+   * @param r2 Vector from centroid of second polygon to contact point.
+   *
+   */
+  void applyImpulse(double impulse, const Eigen::Vector2d& n,
+                    env::bodies::Polygon& p1, env::bodies::Polygon& p2,
+                    const Eigen::Vector2d& r1, const Eigen::Vector2d& r2);
 };
 } // namespace physics::collision

@@ -7,6 +7,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
+#include <limits>
 
 int main() {
   // env::bodies::Polygon p1(
@@ -59,13 +60,13 @@ int main() {
   }
                               .transpose());
 
-  // env::bodies::Polygon t3(
-  //     Eigen::MatrixXd{{0, 250}, {150, 180}, {200, 250}}.transpose(), 0, 0,
-  //     {0, 0});
-  //
-  // env::bodies::Polygon t4(
-  //     Eigen::MatrixXd{{0, 190}, {150, 120}, {200, 190}}.transpose(), 0, 0,
-  //     {0, 0});
+  env::bodies::Polygon t3(
+      Eigen::MatrixXd{{0, 250}, {150, 180}, {200, 250}}.transpose(), 0, 0,
+      {0, 0});
+
+  env::bodies::Polygon t4(
+      Eigen::MatrixXd{{0, 190}, {150, 120}, {200, 190}}.transpose(), 0, 0,
+      {0, 0});
   //
   // env::bodies::Polygon t5(
   //     Eigen::MatrixXd{{92, 131}, {101, 222}, {16, 190}}.transpose(), 0, 0,
@@ -84,16 +85,34 @@ int main() {
   // env::bodies::Square s2(Eigen::Vector2d{800, 400}, 100,
   //                        45.0 / 360 * (2 * M_PI));
   env::bodies::Square s3(Eigen::Vector2d{925, 275}, 100);
+  env::bodies::Polygon t8(
+      Eigen::MatrixXd{
+          {125, 20}, {325, 20}, {275, 70}}
+          .transpose(), 0, 0, {0, 25});
 
+  env::bodies::Polygon t9(
+      Eigen::MatrixXd{
+          {300, 100}, {500, 100}, {450, 150}}
+          .transpose(),
+      0, 0, {0, 0});
+
+  env::bodies::Polygon b1(
+      Eigen::MatrixXd{
+          {0, 0+10}, {0, -100+10}, {1e6, -100+10}, {1e6, 0+10}}
+          .transpose());
+  b1.setMass(std::numeric_limits<double>::max());
   // Create environment
   env::Environment simEnv;
-  simEnv.addPolygon(t1);
-  simEnv.addPolygon(c1);
-  simEnv.addPolygon(c2);
-  simEnv.addPolygon(c3);
-  simEnv.addPolygon(c4);
-  simEnv.addPolygon(s1);
-  simEnv.addPolygon(s3);
+  // simEnv.addPolygon(t1);
+  // simEnv.addPolygon(c1);
+  // simEnv.addPolygon(c2);
+  // simEnv.addPolygon(c3);
+  // simEnv.addPolygon(c4);
+  // simEnv.addPolygon(s1);
+  // simEnv.addPolygon(s3);
+  simEnv.addPolygon(b1, false);
+  simEnv.addPolygon(t9);
+  simEnv.addPolygon(t8);
 
   // Create physics engine
   physics::PhysicsEngine engine(0.01);

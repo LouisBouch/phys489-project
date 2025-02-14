@@ -25,22 +25,22 @@ public:
    *
    * @return Valid collision if one occurs given the parameters.
    */
-  static std::optional<Collision>
-  create(const env::bodies::Polygon& p1, int subP1I,
-         const env::bodies::Polygon& p2, int subP2I,
-         const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePi);
+  static std::optional<Collision> create(env::bodies::Polygon& p1, int subP1I,
+                                         env::bodies::Polygon& p2, int subP2I,
+                                         const Eigen::Vector2d& n, double depth,
+                                         std::array<int, 2> refEdgePi);
   /**
    * @brief Gets the first polygon involved in the collision.
    *
    * @return First polygon in the collision.
    */
-  const env::bodies::Polygon& getFirstPolygon() const;
+  env::bodies::Polygon& getFirstPolygon();
   /**
    * @brief Gets the second polygon involved in the collision.
    *
    * @return Second polygon in the collision.
    */
-  const env::bodies::Polygon& getSecondPolygon() const;
+  env::bodies::Polygon& getSecondPolygon();
   /**
    * @brief Gets the collision normal.
    *
@@ -74,14 +74,30 @@ public:
    */
   const std::array<int, 2>& getRefEdgePI() const;
 
+  /**
+   * @brief Gets the current impulse for each contact point.
+   *
+   * @return Impulse of each contact point.
+   */
+  const std::vector<double>& getImpulse() const;
+
+  /**
+   * @brief Adds impulse to contact in manifold.
+   *
+   * @param impulse Magnitude of impulse.
+   * @param contactPoint Which of the contact point on the manifold to add an
+   * impulse to.
+   */
+  void addImpulse(double impulse, int contactPoint);
+
 private:
   std::array<int, 2>
       refEdgePI; //< Indices of sub polygon vertices of edge where collision
                  // occured on reference polygon. Actual polygon vertex index
-                 // can be obtained with p.getConvexDecomP[subP1I][refEdge[0]]. (Along the ccw
-                 // direction.)
-  const env::bodies::Polygon& p1; //< First colliding polygon. (Reference)
-  const env::bodies::Polygon& p2; //< Second colliding polygon. (Incident)
+                 // can be obtained with p.getConvexDecomP[subP1I][refEdge[0]].
+                 // (Along the ccw direction.)
+  env::bodies::Polygon& p1; //< First colliding polygon. (Reference)
+  env::bodies::Polygon& p2; //< Second colliding polygon. (Incident)
   const int
       subP1I; //< Sub polygon on the reference plygon where collision occured.
   const int
@@ -91,6 +107,8 @@ private:
   std::vector<Eigen::Vector2d>
       manifold; //< Contact manifold of the collision. (Can have at most 2
                 // points)
+  std::vector<double>
+      impulse; //< Total impulse applied to each point on the manifold.
 
   /**
    * @brief Represents a collision between two polygons.
@@ -104,8 +122,8 @@ private:
    * @param refEdgePi Reference edge where collision occured.
    * @param manifold Contact manifold of the collision.
    */
-  Collision(const env::bodies::Polygon& p1, int subP1I,
-            const env::bodies::Polygon& p2, int subP2I,
+  Collision(env::bodies::Polygon& p1, int subP1I,
+            env::bodies::Polygon& p2, int subP2I,
             const Eigen::Vector2d& n, double depth,
             std::array<int, 2> refEdgePi,
             std::vector<Eigen::Vector2d> manifold);
@@ -126,9 +144,8 @@ private:
    * @return Contact manifold of the collision.
    */
   static std::optional<std::vector<Eigen::Vector2d>>
-  findManifold(const env::bodies::Polygon& p1, int subP1I,
-               const env::bodies::Polygon& p2, int subP2I,
-               const Eigen::Vector2d& n, double depth,
+  findManifold(env::bodies::Polygon& p1, int subP1I, env::bodies::Polygon& p2,
+               int subP2I, const Eigen::Vector2d& n, double depth,
                std::array<int, 2> refEdgeTi);
 };
 } // namespace physics::collision

@@ -28,7 +28,7 @@ public:
    *
    * @return List of collisions.
    */
-  const std::vector<Collision>& getCollisions() const;
+  std::vector<Collision>& getCollisions();
 
   /**
    * @brief Sets the environment the class will work with.

@@ -12,7 +12,8 @@
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
-                              double angV, Eigen::Vector2d velocity, int id)
+                              double angV, Eigen::Vector2d velocity, int id,
+                              double density)
     : nbVertices(vertices.cols()), area(findArea(vertices)), colliding(false),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
@@ -21,7 +22,9 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       triangulation(utils::geo::triangulate(vertices)),
       globalVertices(vertices), lastRot(INFINITY), lastCentroid(centroid),
       id(id), moment(findMoment()),
-      convexification(utils::geo::convexify(vertices, triangulation)), furthestVDist(findFurthestVDist()) {
+      convexification(utils::geo::convexify(vertices, triangulation)),
+      furthestVDist(findFurthestVDist()), density(density),
+      mass(area * density) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -34,11 +37,11 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
     : Polygon(polygon.getLocalVertices(), polygon.rot, polygon.angV,
-              polygon.velocity, polygon.id) {
+              polygon.velocity, polygon.id, polygon.density) {
   translate(polygon.getCentroid());
   // Ensure forces are copied properly.
-  for (auto& force : forces) {
-    force.second.setRot(&rot);
+  for (const auto& force : polygon.forces) {
+    forces.emplace(force.first, force.second);
   }
 }
 
@@ -244,7 +247,7 @@ double env::bodies::Polygon::findMoment() {
     Eigen::Vector2d a = getGlobalVertices().col(curV) - centroid;
     Eigen::Vector2d b = getGlobalVertices().col(lastV) - centroid;
     // Add triangle moment to total moment.
-    moment += areaTri * (a.dot(a) + b.dot(b) + a.dot(b)) / 6.0;
+    moment += density * areaTri * (a.dot(a) + b.dot(b) + a.dot(b)) / 6.0;
   }
   return moment;
 }
@@ -268,4 +271,21 @@ env::bodies::Polygon::getConvexDecomp() const {
 ////////////////////////////////////////////////////////////
 double env::bodies::Polygon::findFurthestVDist() {
   return (getGlobalVertices().colwise() - centroid).colwise().norm().maxCoeff();
+}
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getMass() const { return mass; }
+
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getDensity() const { return density; }
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setDensity(double density) {
+  this->density = density;
+  this->mass = density * area;
+  this->moment = findMoment();
+}
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setMass(double mass) {
+  this->mass = mass;
+  this->density = mass / area;
+  this->moment = findMoment();
 }

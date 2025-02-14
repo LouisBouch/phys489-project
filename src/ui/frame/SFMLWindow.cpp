@@ -14,6 +14,7 @@
 #include <cmath>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
+#include <limits>
 #include <thread>
 
 #define FPS 60
@@ -136,7 +137,9 @@ void ui::frame::SFMLWindow::handleEvents() {
       std::cout << "x: " << x << ", y:" << y << "\n";
       // Create dragging force if you are dragging a polygon.
       if (int id = clickedInsidePolygon({x, y}); id != -1) {
-        createForce(id, {x, y});
+        createForce(
+            id, {x, y},
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl));
       }
     } else if (const auto* mouseRelease =
                    event->getIf<sf::Event::MouseButtonReleased>()) {
@@ -179,7 +182,8 @@ int ui::frame::SFMLWindow::clickedInsidePolygon(sf::Vector2i cursor) {
 }
 
 ////////////////////////////////////////////////////////////
-void ui::frame::SFMLWindow::createForce(int pId, sf::Vector2i cursor) {
+void ui::frame::SFMLWindow::createForce(int pId, sf::Vector2i cursor,
+                                        bool prevRot) {
   // Last force was not properly deleted, so delete it now.
   if (dragging) {
     removeForce();
@@ -192,13 +196,22 @@ void ui::frame::SFMLWindow::createForce(int pId, sf::Vector2i cursor) {
     return;
   }
   env::bodies::Polygon& p = *pp.value();
+  // Don't try to pull an infinite mass.
+  if (p.getMass() == std::numeric_limits<double>::max()) {
+    dragging = false;
+    return;
+  }
 
   // Pulling force.
   p.addForce(physics::forces::ForceSource::UserPull,
-             Eigen::Vector2d{cursor.x, cursor.y} - p.getCentroid(), {1, 0},
-             0);
+             Eigen::Vector2d{cursor.x, cursor.y} - p.getCentroid(), {1, 0}, 0);
   // Force of drag.
   p.addForce(physics::forces::ForceSource::UserInducedDrag, {0, 0}, {1, 0}, 0);
+
+  // "Force" to prevent rotation
+  if (prevRot) {
+    p.addForce(physics::forces::ForceSource::NoRot, {0, 0}, {1, 0}, 0);
+  }
   // Unlock polygons
   engine.getEnv()->unlockPolygons();
   return;
@@ -218,6 +231,7 @@ void ui::frame::SFMLWindow::removeForce() {
   env::bodies::Polygon& p = *pp.value();
   p.removeForce(physics::forces::ForceSource::UserPull);
   p.removeForce(physics::forces::ForceSource::UserInducedDrag);
+  p.removeForce(physics::forces::ForceSource::NoRot);
 }
 
 ////////////////////////////////////////////////////////////
@@ -263,10 +277,10 @@ void ui::frame::SFMLWindow::updateDragForce() {
   sf::Vector2i b = sf::Mouse::getPosition(window);
   b.y = window.getSize().y - b.y; // Adjust to physical coordinate system.
   Eigen::Vector2d dir = {b.x - a.x(), b.y - a.y()};
-  double k = 1e2 * p.getArea(); // Spring coefficient
+  double k = 1e2 * p.getMass(); // Spring coefficient
   double pullAmp = k * dir.norm();
   double d =
-      2 * std::sqrt(p.getArea() * k); // Damping factor (critical damping)
+      2 * std::sqrt(p.getMass() * k); // Damping factor (critical damping)
   double dragAmp = d * p.getVelocity().norm();
   ;
   // Updates pulling force.
@@ -276,6 +290,13 @@ void ui::frame::SFMLWindow::updateDragForce() {
   // Updates force of drag.
   polyForceDrag.setForceD(-p.getVelocity());
   polyForceDrag.setAmplitude(dragAmp);
+
+  // Update no rotation condition.
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
+    p.addForce(physics::forces::ForceSource::NoRot, {0, 0}, {1, 0}, 0);
+  } else {
+    p.removeForce(physics::forces::ForceSource::NoRot);
+  }
 
   engine.getEnv()->unlockPolygons();
 }

@@ -1,18 +1,19 @@
 #include "physics/collision/Collision.hpp"
 #include "env/bodies/Polygon.hpp"
 #include "utils/geo/geoUtils.hpp"
+#include <algorithm>
 #include <array>
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <optional>
 #include <vector>
 
 //////////////////////////////FACTORY//////////////////////////////
 std::optional<physics::collision::Collision>
-physics::collision::Collision::create(const env::bodies::Polygon& p1,
-                                      const int subP1I,
-                                      const env::bodies::Polygon& p2,
-                                      const int subP2I,
+physics::collision::Collision::create(env::bodies::Polygon& p1,
+                                      int subP1I,
+                                      env::bodies::Polygon& p2,
+                                      int subP2I,
                                       const Eigen::Vector2d& n, double depth,
                                       std::array<int, 2> refEdgePI) {
   std::optional<std::vector<Eigen::Vector2d>> mani =
@@ -30,21 +31,20 @@ physics::collision::Collision::Collision(const Collision& col)
                 col.refEdgePI, col.manifold) {}
 
 ////////////////////////////////////////////////////////////
-physics::collision::Collision::Collision(
-    const env::bodies::Polygon& p1, int subP1I, const env::bodies::Polygon& p2,
-    int subP2I, const Eigen::Vector2d& n, double depth,
-    std::array<int, 2> refEdgePI, std::vector<Eigen::Vector2d> manifold)
+physics::collision::Collision::Collision(env::bodies::Polygon& p1, int subP1I,
+                                         env::bodies::Polygon& p2, int subP2I,
+                                         const Eigen::Vector2d& n, double depth,
+                                         std::array<int, 2> refEdgePI,
+                                         std::vector<Eigen::Vector2d> manifold)
     : p1(p1), p2(p2), n(n.normalized()), depth(depth), manifold(manifold),
-      refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I) {}
+      refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I), impulse(manifold.size()) {}
 //////////////////////////////GETTERS//////////////////////////////
-const env::bodies::Polygon&
-physics::collision::Collision::getFirstPolygon() const {
+env::bodies::Polygon& physics::collision::Collision::getFirstPolygon() {
   return p1;
 }
 
 ////////////////////////////////////////////////////////////
-const env::bodies::Polygon&
-physics::collision::Collision::getSecondPolygon() const {
+env::bodies::Polygon& physics::collision::Collision::getSecondPolygon() {
   return p2;
 }
 
@@ -65,15 +65,15 @@ physics::collision::Collision::getManifold() const {
 //////////////////////////////PRIVATE METHODS//////////////////////////////
 std::optional<std::vector<Eigen::Vector2d>>
 physics::collision::Collision::findManifold(
-    const env::bodies::Polygon& p1, int subP1I,
-    const env::bodies::Polygon& p2, int subP2I,
-    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePI) {
+    env::bodies::Polygon& p1, int subP1I, env::bodies::Polygon& p2,
+    int subP2I, const Eigen::Vector2d& n, double depth,
+    std::array<int, 2> refEdgePI) {
   const Eigen::Matrix2Xd& vs1 = p1.getGlobalVertices();
   const Eigen::Matrix2Xd& vs2 = p2.getGlobalVertices();
 
   const std::vector<int>& subP1 = p1.getConvexDecomp()[subP1I];
   const std::vector<int>& subP2 = p2.getConvexDecomp()[subP2I];
-    
+
   std::optional<std::vector<Eigen::Vector2d>> maniOpt =
       findIncEdge(p1, subP1I, p2, subP2I, n, depth, refEdgePI);
   // Check if the incident edge is invalid.
@@ -124,10 +124,12 @@ physics::collision::Collision::findManifold(
 }
 ////////////////////////////////////////////////////////////
 std::optional<std::vector<Eigen::Vector2d>>
-physics::collision::Collision::findIncEdge(
-    const env::bodies::Polygon& p1, int subP1I,
-    const env::bodies::Polygon& p2, int subP2I,
-    const Eigen::Vector2d& n, double depth, std::array<int, 2> refEdgePI) {
+physics::collision::Collision::findIncEdge(const env::bodies::Polygon& p1,
+                                           int subP1I,
+                                           const env::bodies::Polygon& p2,
+                                           int subP2I, const Eigen::Vector2d& n,
+                                           double depth,
+                                           std::array<int, 2> refEdgePI) {
   const Eigen::Matrix2Xd& vs1 = p1.getGlobalVertices();
   std::vector<Eigen::Vector2d> incEdge;
   const Eigen::Matrix2Xd& vs2 = p2.getGlobalVertices();
@@ -185,4 +187,19 @@ physics::collision::Collision::findIncEdge(
 const int physics::collision::Collision::getSubP1I() const { return subP1I; }
 
 ////////////////////////////////////////////////////////////
-const std::array<int, 2>& physics::collision::Collision::getRefEdgePI() const { return refEdgePI; }
+const std::array<int, 2>& physics::collision::Collision::getRefEdgePI() const {
+  return refEdgePI;
+}
+////////////////////////////////////////////////////////////
+const std::vector<double>& physics::collision::Collision::getImpulse() const {
+  return impulse;
+}
+
+////////////////////////////////////////////////////////////
+void physics::collision::Collision::addImpulse(double impulse,
+                                               int contactPoint) {
+  if (contactPoint < this->impulse.size()) {
+    this->impulse[contactPoint] =
+        std::max<double>(0, this->impulse[contactPoint] + impulse);
+  }
+}
