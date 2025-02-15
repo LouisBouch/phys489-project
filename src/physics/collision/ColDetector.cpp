@@ -146,13 +146,13 @@ bool physics::collision::ColDetector::subtestSATTria(
   // No separating axis found, add the collision.
   if (p1IsReference) {
     std::optional<Collision> col = physics::collision::Collision::create(
-        p1, subP1I, p2, subP2I, n, minDepth, refEdge);
+        p1, subP1I, p2, subP2I, n, refEdge);
     if (col.has_value()) {
       collisions.push_back(col.value());
     }
   } else {
     std::optional<Collision> col = physics::collision::Collision::create(
-        p2, subP2I, p1, subP1I, n, minDepth, refEdge);
+        p2, subP2I, p1, subP1I, n, refEdge);
     if (col.has_value()) {
       collisions.push_back(col.value());
     }

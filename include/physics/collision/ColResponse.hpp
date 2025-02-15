@@ -21,8 +21,9 @@ public:
    * @brief Resolves all collisions in the list.
    *
    * @param collisions List of collisions to resolve.
+   * @param dt Time delta of the physics engine.
    */
-  void resolveCollisions(std::vector<Collision>& collisions);
+  void resolveCollisions(std::vector<Collision>& collisions, double dt);
 
 private:
   bool coupled; //< Whether or not to treat the collision manifold as a coupled
@@ -39,18 +40,21 @@ private:
    * Where v_rel = (v_b + w_b.cross(r_b)) - (v_a + w_a.cross(r_a))
    *
    * @param collision The collision containing the contact manifold.
+   * @param c Contact point for which to find magnitude.
+   * @param targetVel Target velocity of the constraint. (Positive value to pull
+   * objects apart)
    *
-   * @return An impulse magnitude for each contact point on the contact
-   * manifold.
+   * @return An impulse magnitude for the specified contact point.
    */
-  std::vector<double> findImpulseMagnitude(Collision& collision);
+  double findImpulseMagnitude(Collision& collision, int c,
+                              double targetVel = 0);
   /**
-   * @brief Resolves a single collision.
+   * @brief Resolves a single collision velocity constraint.
    *
    * @param collision The collision to be resolved.
    *
    */
-  void resolveCollision(Collision& collision);
+  void enforceVelConstraint(Collision& collision);
 
   /**
    * @brief Applies impulse to contact point.
@@ -66,5 +70,33 @@ private:
   void applyImpulse(double impulse, const Eigen::Vector2d& n,
                     env::bodies::Polygon& p1, env::bodies::Polygon& p2,
                     const Eigen::Vector2d& r1, const Eigen::Vector2d& r2);
+
+  /**
+   * @brief Applies impulse of contact point to position directly.
+   *
+   * @param impulse Impulse magnitude.
+   * @param n Normal of collision.
+   * @param p1 First polygon colliding.
+   * @param p2 Second polygon colliding.
+   * @param r1 Vector from centroid of first polygon to contact point.
+   * @param r2 Vector from centroid of second polygon to contact point.
+   * @param dt Time delta of the physics engine.
+   * @param collision Collision object affected by changed in position.
+   *
+   */
+  void applyImpulseDirectly(double impulse, const Eigen::Vector2d& n,
+                            env::bodies::Polygon& p1, env::bodies::Polygon& p2,
+                            const Eigen::Vector2d& r1,
+                            const Eigen::Vector2d& r2, double dt,
+                            Collision& collision);
+  /**
+   * @brief Resolves a single collision position constraint.
+   *
+   * @param collision The collision to be resolved.
+   * @param dt Time delta of the physics engine.
+   * @param steerConst The steering constant. Says how much of the error to
+   * correct.
+   */
+  void enforcePosConstraint(Collision& collision, double dt, double steerConst);
 };
 } // namespace physics::collision

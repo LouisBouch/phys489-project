@@ -81,10 +81,11 @@ int main() {
   //     Eigen::MatrixXd{{200, 150}, {200, 250}, {100, 250}}.transpose(),
   //     35 / 360.0 * (2 * M_PI), 0);
   //
-  env::bodies::Square s1(Eigen::Vector2d{850, 200}, 100);
+  env::bodies::Square s1(Eigen::Vector2d{100, 60}, 100);
   // env::bodies::Square s2(Eigen::Vector2d{800, 400}, 100,
   //                        45.0 / 360 * (2 * M_PI));
-  env::bodies::Square s3(Eigen::Vector2d{925, 275}, 100);
+  env::bodies::Square s3(Eigen::Vector2d{100, 250}, 100, 0, 0);
+  s3.setDensity(15);
   env::bodies::Polygon t8(
       Eigen::MatrixXd{
           {125, 20}, {325, 20}, {275, 70}}
@@ -103,16 +104,16 @@ int main() {
   b1.setMass(std::numeric_limits<double>::max());
   // Create environment
   env::Environment simEnv;
+  simEnv.addPolygon(b1, false);
   // simEnv.addPolygon(t1);
   // simEnv.addPolygon(c1);
   // simEnv.addPolygon(c2);
   // simEnv.addPolygon(c3);
   // simEnv.addPolygon(c4);
-  // simEnv.addPolygon(s1);
-  // simEnv.addPolygon(s3);
-  simEnv.addPolygon(b1, false);
-  simEnv.addPolygon(t9);
-  simEnv.addPolygon(t8);
+  simEnv.addPolygon(s3);
+  simEnv.addPolygon(s1);
+  // simEnv.addPolygon(t9);
+  // simEnv.addPolygon(t8);
 
   // Create physics engine
   physics::PhysicsEngine engine(0.01);

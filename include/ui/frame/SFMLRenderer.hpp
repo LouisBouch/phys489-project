@@ -1,6 +1,7 @@
 #pragma once
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/Drawable.hpp"
+#include "SFML/Graphics/Font.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "physics/PhysicsEngine.hpp"
 
@@ -54,6 +55,7 @@ public:
 
 private:
   int windowHeight;      //< Height of window.
+  sf::Font font;      //< Font to use to draw stuff.
   physics::PhysicsEngine& engine; //< Physics engine that simulates the environment.
   std::function<void(const sf::Drawable&)>
       g2d; //< Lambda function to draw on screen. Called on each shape in the
@@ -63,5 +65,10 @@ private:
    * @brief Draws shape on screen with filled interior. Uses triangulation to ensure proper filling of concave polygons.
    */
   void fillShape(const Eigen::Matrix2Xd& vertices, sf::Color& color);
+
+  /**
+   * @brief Loads a font.
+   */
+  sf::Font loadFont();
 };
 } // namespace ui::frame

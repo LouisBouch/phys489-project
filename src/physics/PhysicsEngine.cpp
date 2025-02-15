@@ -46,17 +46,17 @@ void physics::PhysicsEngine::simLoop() {
     // Apply forces on polygons.
     applyForces(*env, dt * slowdown);
 
+    // Step Environment.
+    stepEnvironment(*env, dt * slowdown);
+    env->addToTotalTime(microDt * slowdown);
+
     // Detect collisions.
     colDet.findCollisions();
 
     // Resolve collisions.
     if (colDet.getCollisions().size() != 0) {
-      colRes.resolveCollisions(colDet.getCollisions());
+      colRes.resolveCollisions(colDet.getCollisions(), dt);
     }
-
-    // Step Environment.
-    stepEnvironment(*env, dt * slowdown);
-    env->addToTotalTime(microDt * slowdown);
   }
 }
 
@@ -76,8 +76,7 @@ void physics::PhysicsEngine::setEnv(env::Environment* env) {
   this->env = env;
 }
 ////////////////////////////////////////////////////////////
-physics::collision::ColDetector&
-physics::PhysicsEngine::getColDetector() {
+physics::collision::ColDetector& physics::PhysicsEngine::getColDetector() {
   return colDet;
 }
 

@@ -22,9 +22,9 @@ void physics::stepPolygon(env::bodies::Polygon& polygon, double dt) {
 
 ////////////////////////////////////////////////////////////
 void physics::applyForces(env::Environment& env, double dt) {
-  bool dragged =
-      false; // Whether the shape is being dragged or not by the user.
   for (env::bodies::Polygon& p : env.getPolygons()) {
+    bool dragged =
+        false; // Whether the shape is being dragged or not by the user.
     std::unordered_map<physics::forces::ForceSource, physics::forces::Force>&
         forcesMap = p.getForceSources();
     double r = 0.999; // Ratio of rotation lost every second.

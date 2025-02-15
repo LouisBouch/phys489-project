@@ -18,7 +18,7 @@
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLRenderer::SFMLRenderer(physics::PhysicsEngine& engine)
-    : g2d([](const sf::Drawable& s) {}), engine(engine) {}
+    : g2d([](const sf::Drawable& s) {}), engine(engine), font(loadFont()) {}
 
 ////////////////////////////////////////////////////////////
 ui::frame::SFMLRenderer::~SFMLRenderer() {}
@@ -51,6 +51,17 @@ void ui::frame::SFMLRenderer::drawEnv() {
       // Draw convex polygon.
       fillShape(convPVertices, col);
     }
+    int id = p.getId();
+    sf::Text idText(font);
+    idText.setString(std::to_string(id));
+    idText.setFillColor(sf::Color::White);
+    idText.setStyle(sf::Text::Bold);
+    idText.setCharacterSize(20);
+    idText.setOrigin({idText.getLocalBounds().size.x / 2,
+                      idText.getLocalBounds().size.y});
+    idText.setPosition({(float)p.getCentroid().x(),
+                        windowHeight - (float)p.getCentroid().y()});
+    g2d(idText);
   }
   env.unlockPolygons();
   // Draw contact points of collision manifold.
@@ -94,11 +105,6 @@ void ui::frame::SFMLRenderer::setWindowHeight(int windowHeight) {
 }
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLRenderer::showTime() {
-  sf::Font font;
-  if (!font.openFromFile("data/TTF/InconsolataGoNerdFont-Bold.ttf")) {
-    std::cout << "Couldn't load font\n";
-    return;
-  }
   double timeSec = engine.getEnv()->getTotalTime() / 1e6;
   sf::Text timeText(font);
   timeText.setString(std::to_string(timeSec));
@@ -126,4 +132,12 @@ void ui::frame::SFMLRenderer::drawLine(sf::Vector2f a, sf::Vector2f b,
   line.setRotation(
       sf::radians(-angle)); // Negative rotation to simulate a vertical flip.
   g2d(line);
+}
+////////////////////////////////////////////////////////////
+sf::Font ui::frame::SFMLRenderer::loadFont() {
+  sf::Font font;
+  if (!font.openFromFile("data/TTF/InconsolataGoNerdFont-Bold.ttf")) {
+    std::cout << "Couldn't load font\n";
+  }
+  return font;
 }

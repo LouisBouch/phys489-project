@@ -280,11 +280,16 @@ double env::bodies::Polygon::getDensity() const { return density; }
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::setDensity(double density) {
   this->density = density;
-  this->mass = density * area;
-  this->moment = findMoment();
+  setMass(density * area);
 }
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::setMass(double mass) {
+  // Update gravitational force.
+  auto it = forces.find(physics::forces::ForceSource::Gravity);
+  if (it != forces.end()) {
+    physics::forces::Force& force = it->second;
+    force.setAmplitude(force.getAmplitude() / this->mass * mass);
+  }
   this->mass = mass;
   this->density = mass / area;
   this->moment = findMoment();
