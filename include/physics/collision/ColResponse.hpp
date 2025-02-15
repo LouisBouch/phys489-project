@@ -12,10 +12,12 @@ public:
    * @brief Parameterized constructor.
    *
    * @param nbIterations Maximum number of times the resolver will iterate over
-   * the collisions
+   * the collisions for impulse velocities.
+   * @param nbPosIt Maximum number of times the resolver will iterate over
+   * the collisions for pseudo impulses.
    * @param coupled Whether or not to treat the collision manifold as a coupled.
    */
-  ColResponse(int nbIterations = 8, bool coupled = false);
+  ColResponse(int nbIterations = 8, int nbPosIt = 4, bool coupled = false);
 
   /**
    * @brief Resolves all collisions in the list.
@@ -28,9 +30,10 @@ public:
 private:
   bool coupled; //< Whether or not to treat the collision manifold as a coupled
                 // system.
-  int nbIterations; //< Maximum number of times the resolver will iterate over
-                    // the collisions in order to get a better collision
-                    // response.
+  int nbVelIt;  //< Maximum number of times the resolver will iterate over
+                // the collisions in order to get a better velocity response.
+  int nbPosIt;  //< Maximum number of times the resolver will iterate over
+                // the collisions in order to get a better position response.
 
   /**
    * @brief Given a collision and whether to solve the contact manifold as a

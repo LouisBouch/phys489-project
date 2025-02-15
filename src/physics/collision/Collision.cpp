@@ -37,7 +37,7 @@ physics::collision::Collision::Collision(env::bodies::Polygon& p1, int subP1I,
                                          std::vector<Eigen::Vector2d> manifold)
     : p1(p1), p2(p2), n(n.normalized()), manifold(manifold),
       refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I),
-      impulse(manifold.size()) {}
+      accImpulse(manifold.size()), accPseudoImpulse(manifold.size()) {}
 //////////////////////////////GETTERS//////////////////////////////
 env::bodies::Polygon& physics::collision::Collision::getFirstPolygon() {
   return p1;
@@ -187,21 +187,35 @@ const std::array<int, 2>& physics::collision::Collision::getRefEdgePI() const {
   return refEdgePI;
 }
 ////////////////////////////////////////////////////////////
-const std::vector<double>& physics::collision::Collision::getImpulse() const {
-  return impulse;
+const std::vector<double>&
+physics::collision::Collision::getAccImpulse() const {
+  return accImpulse;
+}
+////////////////////////////////////////////////////////////
+const std::vector<double>&
+physics::collision::Collision::getAccPseudoImpulse() const {
+  return accPseudoImpulse;
 }
 
 ////////////////////////////////////////////////////////////
 void physics::collision::Collision::addImpulse(double impulse,
                                                int contactPoint) {
-  if (contactPoint < this->impulse.size()) {
-    this->impulse[contactPoint] =
-        std::max<double>(0, this->impulse[contactPoint] + impulse);
+  if (contactPoint < this->accImpulse.size()) {
+    this->accImpulse[contactPoint] =
+        std::max<double>(0, this->accImpulse[contactPoint] + impulse);
+  }
+}
+////////////////////////////////////////////////////////////
+void physics::collision::Collision::addPseudoImpulse(double impulse,
+                                                     int contactPoint) {
+  if (contactPoint < this->accPseudoImpulse.size()) {
+    this->accPseudoImpulse[contactPoint] =
+        std::max<double>(0, this->accPseudoImpulse[contactPoint] + impulse);
   }
 }
 ////////////////////////////////////////////////////////////
 double physics::collision::Collision::contactPenetration(int contactPoint) {
-  if (contactPoint < this->impulse.size()) {
+  if (contactPoint < this->accImpulse.size()) {
     const Eigen::Matrix2Xd& vs = p1.getGlobalVertices();
     const std::vector<int>& subP = p1.getConvexDecomp()[subP1I];
     return -utils::geo::projectPointsMagnitude(
@@ -210,16 +224,21 @@ double physics::collision::Collision::contactPenetration(int contactPoint) {
   return 0;
 }
 ////////////////////////////////////////////////////////////
-void physics::collision::Collision::updateCollision() {
+bool physics::collision::Collision::updateCollision() {
   const Eigen::Matrix2Xd& vs = p1.getGlobalVertices();
   const std::vector<int>& sp = p1.getConvexDecomp()[subP1I];
   Eigen::Vector2d refEdgeV =
       vs.col(sp[refEdgePI[1]]) - vs.col(sp[refEdgePI[0]]);
   n = Eigen::Vector2d{refEdgeV.y(), -refEdgeV.x()}.normalized();
-  std::cout << "oi1\n";
   auto opt = findManifold(p1, subP1I, p2, subP2I, n, refEdgePI);
-  if (opt.has_value()) {
+  if (opt.has_value() && opt.value().size() > 0) {
+    // Update impulse vectors if necessary.
+    if (manifold.size() != opt.value().size()) {
+      accImpulse = std::vector<double>(opt.value().size());
+      accPseudoImpulse = std::vector<double>(accImpulse);
+    }
     manifold = opt.value();
+    return true;
   }
-  std::cout << "oi2\n";
+  return false;
 }

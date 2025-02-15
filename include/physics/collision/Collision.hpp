@@ -68,11 +68,18 @@ public:
   const std::array<int, 2>& getRefEdgePI() const;
 
   /**
-   * @brief Gets the current impulse for each contact point.
+   * @brief Gets the current accumulated impulse for each contact point.
    *
    * @return Impulse of each contact point.
    */
-  const std::vector<double>& getImpulse() const;
+  const std::vector<double>& getAccImpulse() const;
+
+  /**
+   * @brief Gets the current accumulated pseudo impulse for each contact point.
+   *
+   * @return Pseudo impulse of each contact point.
+   */
+  const std::vector<double>& getAccPseudoImpulse() const;
 
   /**
    * @brief Adds impulse to contact in manifold.
@@ -82,6 +89,15 @@ public:
    * impulse to.
    */
   void addImpulse(double impulse, int contactPoint);
+
+  /**
+   * @brief Adds pseudo impulse to contact in manifold.
+   *
+   * @param impulse Magnitude of pseudo impulse.
+   * @param contactPoint Which of the contact point on the manifold to add an
+   * impulse to.
+   */
+  void addPseudoImpulse(double impulse, int contactPoint);
 
   /**
    * @brief Obtain the penetration of the contact point.
@@ -99,8 +115,10 @@ public:
    * @param p2T Translation of p2.
    * @param p1rot Rotation of p1.
    * @param p2rot Rotation of p2.
+   *
+   * @return Whether the collision is still happening or not.
    */
-  void updateCollision();
+  bool updateCollision();
 
 private:
   std::array<int, 2>
@@ -119,7 +137,9 @@ private:
       manifold; //< Contact manifold of the collision. (Can have at most 2
                 // points)
   std::vector<double>
-      impulse; //< Total impulse applied to each point on the manifold.
+      accImpulse; //< Total impulse applied to each point on the manifold.
+  std::vector<double> accPseudoImpulse; //< Total pseudo impulse applied to each
+                                        // point on the manifold.
 
   /**
    * @brief Represents a collision between two polygons.

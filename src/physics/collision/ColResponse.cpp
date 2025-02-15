@@ -7,8 +7,8 @@
 #include <iostream>
 
 //////////////////////////////CONSTRUCTOR//////////////////////////////
-physics::collision::ColResponse::ColResponse(int nbIterations, bool coupled)
-    : nbIterations(nbIterations), coupled(coupled) {}
+physics::collision::ColResponse::ColResponse(int nbIterations, int nbPosIt, bool coupled)
+    : nbVelIt(nbIterations), nbPosIt(nbPosIt), coupled(coupled) {}
 
 ////////////////////////////////////////////////////////////
 double
@@ -61,33 +61,20 @@ physics::collision::ColResponse::findImpulseMagnitude(Collision& collision,
 ////////////////////////////////////////////////////////////
 void physics::collision::ColResponse::resolveCollisions(
     std::vector<Collision>& collisions, double dt) {
-  // std::cout << "oi\n";
-  // for (auto& col : collisions) {
-  //   for (int i = 0; i < nbIterations; i++) {
-  //     enforceVelConstraint(col);
-  //   }
-  //   int correctionIte = 5;
-  //   for (int i = 0; i < correctionIte; i++) {
-  //     enforcePosConstraint(col, dt, 0.5);
-  //
-  //     // Update collision info after having moved polygons during iteration.
-  //     col.updateCollision();
-  //     std::cout << col.getManifold()[0] << "\n";
-  //   }
-  // }
-  for (int i = 0; i < nbIterations; i++) {
+  for (int i = 0; i < nbVelIt; i++) {
     for (auto& col : collisions) {
       enforceVelConstraint(col);
     }
   }
-  int correctionIte = 5;
-  for (int i = 0; i < correctionIte; i++) {
+  for (int i = 0; i < nbPosIt; i++) {
     for (auto& col : collisions) {
-      enforcePosConstraint(col, dt, 0.5);
+      // Update collision info in case previous collision resolution moved
+      // polygons around. (Only if collision still exists)
+      if (!col.updateCollision()) {
+        continue;
+      }
 
-      // Update collision info after having moved polygons during iteration.
-      col.updateCollision();
-      std::cout << col.getManifold()[0] << "\n";
+      enforcePosConstraint(col, dt, 0.5);
     }
   }
 }
@@ -113,10 +100,10 @@ void physics::collision::ColResponse::enforceVelConstraint(
   // Apply and update impulse for each contact point.
   for (int c = 0; c < deltaImps.size(); c++) {
     double deltaImp = deltaImps[c];
-    double oldImp = collision.getImpulse()[c];
+    double oldImp = collision.getAccImpulse()[c];
     collision.addImpulse(deltaImp, c);
     // Get actual impulse change after clamping.
-    deltaImp = collision.getImpulse()[c] - oldImp;
+    deltaImp = collision.getAccImpulse()[c] - oldImp;
 
     // Apply the impulse.
     Eigen::Vector2d maniPoint =
@@ -172,10 +159,10 @@ void physics::collision::ColResponse::enforcePosConstraint(Collision& collision,
   // Apply and update impulse for each contact point.
   for (int c = 0; c < deltaImps.size(); c++) {
     double deltaImp = deltaImps[c];
-    double oldImp = collision.getImpulse()[c];
-    collision.addImpulse(deltaImp, c);
+    double oldImp = collision.getAccPseudoImpulse()[c];
+    collision.addPseudoImpulse(deltaImp, c);
     // Get actual impulse change after clamping.
-    deltaImp = collision.getImpulse()[c] - oldImp;
+    deltaImp = collision.getAccPseudoImpulse()[c] - oldImp;
 
     // Apply the impulse.
     Eigen::Vector2d maniPoint =

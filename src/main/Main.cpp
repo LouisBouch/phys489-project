@@ -85,7 +85,7 @@ int main() {
   // env::bodies::Square s2(Eigen::Vector2d{800, 400}, 100,
   //                        45.0 / 360 * (2 * M_PI));
   env::bodies::Square s3(Eigen::Vector2d{100, 250}, 100, 0, 0);
-  s3.setDensity(15);
+  s3.setDensity(2);
   env::bodies::Polygon t8(
       Eigen::MatrixXd{
           {125, 20}, {325, 20}, {275, 70}}
@@ -97,20 +97,41 @@ int main() {
           .transpose(),
       0, 0, {0, 0});
 
-  env::bodies::Polygon b1(
+  env::bodies::Polygon floor(
       Eigen::MatrixXd{
           {0, 0+10}, {0, -100+10}, {1e6, -100+10}, {1e6, 0+10}}
           .transpose());
-  b1.setMass(std::numeric_limits<double>::max());
+  floor.setMass(std::numeric_limits<double>::max());
+  env::bodies::Polygon leftWall(
+      Eigen::MatrixXd{
+          {0+10, 0+10}, {0+10, 1e6+10}, {-100+10, 1e6+10}, {-100+10, 0+10}}
+          .transpose());
+  leftWall.setMass(std::numeric_limits<double>::max());
   // Create environment
   env::Environment simEnv;
-  simEnv.addPolygon(b1, false);
+  simEnv.addPolygon(floor, false);
+  simEnv.addPolygon(leftWall, false);
   // simEnv.addPolygon(t1);
   // simEnv.addPolygon(c1);
   // simEnv.addPolygon(c2);
   // simEnv.addPolygon(c3);
   // simEnv.addPolygon(c4);
-  simEnv.addPolygon(s3);
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
+  simEnv.addPolygon(s1);
+  s1.translate({0, 110});
   simEnv.addPolygon(s1);
   // simEnv.addPolygon(t9);
   // simEnv.addPolygon(t8);
