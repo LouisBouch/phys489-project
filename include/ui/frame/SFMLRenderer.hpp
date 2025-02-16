@@ -51,18 +51,20 @@ public:
    * @param thickness Thickness of the line.
    *
    */
-  void drawLine(sf::Vector2f a, sf::Vector2f b, int thickness);
+  void drawLine(const sf::Vector2f& a, const sf::Vector2f& b, int thickness);
 
 private:
-  int windowHeight;      //< Height of window.
-  sf::Font font;      //< Font to use to draw stuff.
-  physics::PhysicsEngine& engine; //< Physics engine that simulates the environment.
+  int windowHeight; //< Height of window.
+  sf::Font font;    //< Font to use to draw stuff.
+  physics::PhysicsEngine&
+      engine; //< Physics engine that simulates the environment.
   std::function<void(const sf::Drawable&)>
       g2d; //< Lambda function to draw on screen. Called on each shape in the
            // environment.
 
   /**
-   * @brief Draws shape on screen with filled interior. Uses triangulation to ensure proper filling of concave polygons.
+   * @brief Draws shape on screen with filled interior. Uses triangulation to
+   * ensure proper filling of concave polygons.
    */
   void fillShape(const Eigen::Matrix2Xd& vertices, sf::Color& color);
 

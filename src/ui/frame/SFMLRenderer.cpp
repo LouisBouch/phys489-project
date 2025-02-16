@@ -32,9 +32,9 @@ void ui::frame::SFMLRenderer::setG2d(
 ////////////////////////////////////////////////////////////
 void ui::frame::SFMLRenderer::drawEnv() {
   env::Environment& env = *engine.getEnv();
-  std::vector<env::bodies::Polygon>& polygons = env.getPolygons();
+  const std::vector<env::bodies::Polygon>& polygons = env.getPolygons();
   // Iterate over polygons convex decomposition and draw each sub polygon.
-  for (env::bodies::Polygon& p : polygons) {
+  for (const env::bodies::Polygon& p : polygons) {
     // Set color depending on collision status.
     sf::Color col =
         p.isColliding() ? sf::Color(255, 0, 0, 150) : sf::Color(0, 255, 0, 150);
@@ -63,9 +63,8 @@ void ui::frame::SFMLRenderer::drawEnv() {
                         windowHeight - (float)p.getCentroid().y()});
     g2d(idText);
   }
-  env.unlockPolygons();
   // Draw contact points of collision manifold.
-  std::vector<physics::collision::Collision>& cols =
+  const std::vector<physics::collision::Collision>& cols =
       engine.getColDetector().getCollisions();
   sf::CircleShape point(2.f);
   // Point representing contact manifold.
@@ -77,6 +76,7 @@ void ui::frame::SFMLRenderer::drawEnv() {
       g2d(point);
     }
   }
+  env.unlockPolygons();
 }
 
 ////////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@ void ui::frame::SFMLRenderer::showTime() {
 }
 
 ////////////////////////////////////////////////////////////
-void ui::frame::SFMLRenderer::drawLine(sf::Vector2f a, sf::Vector2f b,
+void ui::frame::SFMLRenderer::drawLine(const sf::Vector2f& a, const sf::Vector2f& b,
                                        int thickness) {
   // Direction vector from a to b.
   sf::Vector2f dir = b - a;

@@ -15,6 +15,7 @@
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <limits>
+#include <ratio>
 #include <thread>
 
 #define FPS 60
@@ -76,6 +77,8 @@ void ui::frame::SFMLWindow::windowLoop() {
   }
   sf::Clock clock;
   while (running) {
+    // Lock the environment for the duration of the rendering.
+    engine.getEnv()->lockEnv();
     // handle events
     handleEvents();
 
@@ -93,7 +96,8 @@ void ui::frame::SFMLWindow::windowLoop() {
     if (!paused && engine.getEnv()) {
       engine.getEnv()->addToTimeBuffer(deltaTime);
     }
-
+    engine.getEnv()->unlockEnv();
+    // Display to screen.
     window.display();
   }
   // Deactivate window once the rendering loop ends.
@@ -152,7 +156,7 @@ void ui::frame::SFMLWindow::handleEvents() {
       }
       // Forward 5 steps.
       else if (keyPressed->scancode == sf::Keyboard::Scancode::Right &&
-               keyPressed->control) {
+               keyPressed->alt) {
         engine.getEnv()->addToTimeBuffer(engine.getDt() * 1e6 * 5);
       }
       // Forward one step.

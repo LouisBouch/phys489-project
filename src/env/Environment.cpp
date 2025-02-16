@@ -38,20 +38,42 @@ void env::Environment::addPolygon(bodies::Polygon& polygon, bool grav) {
 
 ////////////////////////////////////////////////////////////
 std::vector<env::bodies::Polygon>& env::Environment::getPolygons() {
+  polygons_mW.lock();
   polygons_m.lock();
+  polygons_mW.unlock();
   return polygons;
+}
+////////////////////////////////////////////////////////////
+void env::Environment::lockPolygons() {
+  polygons_mW.lock();
+  polygons_m.lock();
+  polygons_mW.unlock();
 }
 
 ////////////////////////////////////////////////////////////
 void env::Environment::unlockPolygons() { polygons_m.unlock(); }
 
 ////////////////////////////////////////////////////////////
+void env::Environment::lockEnv() {
+  env_mW.lock();
+  env_m.lock();
+  env_mW.unlock();
+}
+
+////////////////////////////////////////////////////////////
+void env::Environment::unlockEnv() { env_m.unlock(); }
+
+////////////////////////////////////////////////////////////
 bool env::Environment::addToTimeBuffer(int time) {
-  if (time + timeBuffer.load() < 0) {
-    return false;
+  int_least64_t current = timeBuffer.load();
+  while (true) {
+    if (time + timeBuffer.load() < 0) {
+      return false;
+    }
+    if (timeBuffer.compare_exchange_weak(current, current + time)) {
+      return true;
+    }
   }
-  timeBuffer.fetch_add(time);
-  return true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -61,7 +83,14 @@ int_least64_t env::Environment::getTimeBuffer() { return timeBuffer.load(); }
 int_least64_t env::Environment::getTotalTime() { return totalTime; }
 
 ////////////////////////////////////////////////////////////
-void env::Environment::addToTotalTime(int_least64_t time) { totalTime += time; }
+void env::Environment::addToTotalTime(int_least64_t time) {
+  int_least64_t current = totalTime.load();
+  while (true) {
+    if (totalTime.compare_exchange_weak(current, current + time)) {
+      return;
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////
 std::optional<env::bodies::Polygon*> env::Environment::getPolyById(int id) {

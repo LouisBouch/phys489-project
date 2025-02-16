@@ -15,8 +15,8 @@ physics::collision::ColDetector::ColDetector(env::Environment* env)
 std::vector<physics::collision::Collision>&
 physics::collision::ColDetector::findCollisions() {
   // Empty previous collisions.
-  collisions.clear();
   std::vector<env::bodies::Polygon>& polygons = env->getPolygons();
+  collisions.clear();
   int nbPoly = polygons.size();
   std::vector<int_fast8_t> collisionStatus(nbPoly, 0);
   // Check for collisions between each pair of polygons.

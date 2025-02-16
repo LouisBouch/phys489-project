@@ -55,10 +55,26 @@ public:
   std::vector<bodies::Polygon>& getPolygons();
 
   /**
+   * @brief Locks the polygons list.
+   *
+   */
+  void lockPolygons();
+  /**
    * @brief Unlocks the polygons list.
    *
    */
   void unlockPolygons();
+
+  /**
+   * @brief Locks the environment.
+   *
+   */
+  void lockEnv();
+  /**
+   * @brief Unlocks the environment.
+   *
+   */
+  void unlockEnv();
 
   /**
    * @brief Add time to the buffer. (Remove with negative time value)
@@ -111,5 +127,8 @@ private:
       totalTime; //< Time since start of simulation. (In microseconds)
                  // stores. (Only used for debug info for the renderer)
   mutable std::mutex polygons_m; //< Mutex for polygons list.
+  mutable std::mutex env_m; //< Mutex for environment.
+  mutable std::mutex polygons_mW; //< Waitlist mutex for the polygons mutex.
+  mutable std::mutex env_mW; //< Waitlist mutex for the env mutex.
 };
 } // namespace env

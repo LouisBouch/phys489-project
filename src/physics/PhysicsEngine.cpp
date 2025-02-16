@@ -37,16 +37,22 @@ void physics::PhysicsEngine::stopSimLoop() { running = false; }
 void physics::PhysicsEngine::simLoop() {
   int microDt = dt * 1e6;
   while (running) {
-    // If not enough time in buffer
+    // env->lockEnv();
+    // If not enough time in buffer, skip this iteration and wait.
     if (!env->addToTimeBuffer(-microDt)) {
-      std::this_thread::sleep_for(
-          std::chrono::microseconds((int)microDt - env->getTimeBuffer()));
+      int sleep = (int)microDt - env->getTimeBuffer();
+      // env->unlockEnv();
+      std::this_thread::sleep_for(std::chrono::microseconds(sleep));
       continue;
     }
+    // Step Environment.
+    env->lockEnv(); // Ensure the environment is locked from the stepping all
+                    // the way to penetration correction. Otherwise, the
+                    // renderer might draw the polygon after the environment has
+                    // been stepped but before the position was corrected.
     // Apply forces on polygons.
     applyForces(*env, dt * slowdown);
 
-    // Step Environment.
     stepEnvironment(*env, dt * slowdown);
     env->addToTotalTime(microDt * slowdown);
 
@@ -57,6 +63,7 @@ void physics::PhysicsEngine::simLoop() {
     if (colDet.getCollisions().size() != 0) {
       colRes.resolveCollisions(colDet.getCollisions(), dt);
     }
+    env->unlockEnv();
   }
 }
 
