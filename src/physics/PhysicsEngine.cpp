@@ -37,11 +37,9 @@ void physics::PhysicsEngine::stopSimLoop() { running = false; }
 void physics::PhysicsEngine::simLoop() {
   int microDt = dt * 1e6;
   while (running) {
-    // env->lockEnv();
     // If not enough time in buffer, skip this iteration and wait.
     if (!env->addToTimeBuffer(-microDt)) {
       int sleep = (int)microDt - env->getTimeBuffer();
-      // env->unlockEnv();
       std::this_thread::sleep_for(std::chrono::microseconds(sleep));
       continue;
     }

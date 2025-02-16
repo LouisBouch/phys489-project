@@ -43,14 +43,15 @@ private:
    * Where v_rel = (v_b + w_b.cross(r_b)) - (v_a + w_a.cross(r_a))
    *
    * @param collision The collision containing the contact manifold.
+   * @param n Vector along which the velocity contraint must be met.
    * @param c Contact point for which to find magnitude.
    * @param targetVel Target velocity of the constraint. (Positive value to pull
    * objects apart)
    *
    * @return An impulse magnitude for the specified contact point.
    */
-  double findImpulseMagnitude(Collision& collision, int c,
-                              double targetVel = 0);
+  double findImpulseMagnitude(Collision& collision, const Eigen::Vector2d& n,
+                              int c, double targetVel = 0);
   /**
    * @brief Resolves a single collision velocity constraint.
    *
@@ -90,8 +91,7 @@ private:
   void applyImpulseDirectly(double impulse, const Eigen::Vector2d& n,
                             env::bodies::Polygon& p1, env::bodies::Polygon& p2,
                             const Eigen::Vector2d& r1,
-                            const Eigen::Vector2d& r2, double dt,
-                            Collision& collision);
+                            const Eigen::Vector2d& r2, double dt);
   /**
    * @brief Resolves a single collision position constraint.
    *
@@ -101,5 +101,12 @@ private:
    * correct.
    */
   void enforcePosConstraint(Collision& collision, double dt, double steerConst);
+
+  /**
+   * @brief Resolves a single collision friction constraint.
+   *
+   * @param collision The collision to be resolved.
+   */
+  void enforceFrictionConstraint(Collision& collision);
 };
 } // namespace physics::collision

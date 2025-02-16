@@ -2,22 +2,23 @@
 #include "env/bodies/Polygon.hpp"
 #include "physics/collision/Collision.hpp"
 #include "utils/geo/geoUtils.hpp"
+#include <algorithm>
+#include <cmath>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 
 //////////////////////////////CONSTRUCTOR//////////////////////////////
-physics::collision::ColResponse::ColResponse(int nbIterations, int nbPosIt, bool coupled)
+physics::collision::ColResponse::ColResponse(int nbIterations, int nbPosIt,
+                                             bool coupled)
     : nbVelIt(nbIterations), nbPosIt(nbPosIt), coupled(coupled) {}
 
 ////////////////////////////////////////////////////////////
-double
-physics::collision::ColResponse::findImpulseMagnitude(Collision& collision,
-                                                      int c, double targetVel) {
+double physics::collision::ColResponse::findImpulseMagnitude(
+    Collision& collision, const Eigen::Vector2d& n, int c, double targetVel) {
   // The impulse magnitudes.
   double impulse = 0;
   const std::array<int, 2>& refEdge = collision.getRefEdgePI();
-  const Eigen::Vector2d& n = collision.getNormal();
 
   const env::bodies::Polygon& p1 = collision.getFirstPolygon();
   const env::bodies::Polygon& p2 = collision.getSecondPolygon();
@@ -61,11 +62,17 @@ physics::collision::ColResponse::findImpulseMagnitude(Collision& collision,
 ////////////////////////////////////////////////////////////
 void physics::collision::ColResponse::resolveCollisions(
     std::vector<Collision>& collisions, double dt) {
+  // Apply velocity constraints.
   for (int i = 0; i < nbVelIt; i++) {
     for (auto& col : collisions) {
       enforceVelConstraint(col);
     }
   }
+  // Apply friction constraints.
+  for (auto& col : collisions) {
+    enforceFrictionConstraint(col);
+  }
+  // Apply position constraints.
   for (int i = 0; i < nbPosIt; i++) {
     for (auto& col : collisions) {
       // Update collision info in case previous collision resolution moved
@@ -83,12 +90,12 @@ void physics::collision::ColResponse::resolveCollisions(
 void physics::collision::ColResponse::enforceVelConstraint(
     Collision& collision) {
   std::vector<double> deltaImps(collision.getManifold().size());
+  const Eigen::Vector2d& n = collision.getNormal();
   for (int c = 0; c < deltaImps.size(); c++) {
-    deltaImps[c] = findImpulseMagnitude(collision, c);
+    deltaImps[c] = findImpulseMagnitude(collision, n, c);
   }
 
   const std::array<int, 2>& refEdge = collision.getRefEdgePI();
-  const Eigen::Vector2d& n = collision.getNormal();
 
   env::bodies::Polygon& p1 = collision.getFirstPolygon();
   env::bodies::Polygon& p2 = collision.getSecondPolygon();
@@ -137,17 +144,65 @@ void physics::collision::ColResponse::applyImpulse(double impulse,
   p1.addAngV(-impulse * utils::geo::cross2D(r1, n) / p1.getMoment());
   p2.addAngV(impulse * utils::geo::cross2D(r2, n) / p2.getMoment());
 }
+
+////////////////////////////////////////////////////////////
+void physics::collision::ColResponse::enforceFrictionConstraint(
+    Collision& collision) {
+
+  const Eigen::Vector2d& n = collision.getNormal();
+  const Eigen::Vector2d t =
+      utils::geo::rotatePoints(n, M_PI / 2.0); // Tangent to normal.
+  std::vector<double> deltaImps(collision.getManifold().size());
+  for (int c = 0; c < deltaImps.size(); c++) {
+    deltaImps[c] = findImpulseMagnitude(collision, t, c);
+  }
+  const std::array<int, 2>& refEdge = collision.getRefEdgePI();
+
+  env::bodies::Polygon& p1 = collision.getFirstPolygon();
+  env::bodies::Polygon& p2 = collision.getSecondPolygon();
+  const Eigen::Matrix2Xd& vs = p1.getGlobalVertices();
+
+  // Indices of vertices of reference sub polygon.
+  const std::vector<int>& subP = p1.getConvexDecomp()[collision.getSubP1I()];
+
+  // Apply and update impulse for each contact point.
+  for (int c = 0; c < deltaImps.size(); c++) {
+    double deltaImp = deltaImps[c];
+    double accImpulse = collision.getAccImpulse()[c];
+    collision.addPseudoImpulse(deltaImp, c);
+    // Get actual impulse change after clamping.
+    double fricCoeff = 0.5;
+    deltaImp = std::min(deltaImp, fricCoeff * accImpulse);
+
+    // Apply the impulse.
+    Eigen::Vector2d maniPoint =
+        collision.getManifold()[c]; // Contact point position.
+    Eigen::Vector2d r2 =
+        maniPoint - p2.getCentroid(); // Contact point on second polygon
+                                      // relative to centroid.
+    Eigen::Vector2d r1 =
+        utils::geo::projectPoints(maniPoint - vs.col(subP[refEdge[0]]),
+                                  vs.col(subP[refEdge[1]]) -
+                                      vs.col(subP[refEdge[0]]))
+            .col(0) +
+        vs.col(subP[refEdge[0]]) -
+        p1.getCentroid(); // Contact point on first polygon relative
+                          // to centroid.
+    applyImpulse(deltaImp, t, p1, p2, r1, r2);
+  }
+}
+
 ////////////////////////////////////////////////////////////
 void physics::collision::ColResponse::enforcePosConstraint(Collision& collision,
                                                            double dt,
                                                            double steerConst) {
+  const Eigen::Vector2d& n = collision.getNormal();
   std::vector<double> deltaImps(collision.getManifold().size());
   for (int c = 0; c < deltaImps.size(); c++) {
     deltaImps[c] = findImpulseMagnitude(
-        collision, c, steerConst * collision.contactPenetration(c) / dt);
+        collision, n, c, steerConst * collision.contactPenetration(c) / dt);
   }
   const std::array<int, 2>& refEdge = collision.getRefEdgePI();
-  const Eigen::Vector2d& n = collision.getNormal();
 
   env::bodies::Polygon& p1 = collision.getFirstPolygon();
   env::bodies::Polygon& p2 = collision.getSecondPolygon();
@@ -178,14 +233,14 @@ void physics::collision::ColResponse::enforcePosConstraint(Collision& collision,
         vs.col(subP[refEdge[0]]) -
         p1.getCentroid(); // Contact point on first polygon relative
                           // to centroid.
-    applyImpulseDirectly(deltaImp, n, p1, p2, r1, r2, dt, collision);
+    applyImpulseDirectly(deltaImp, n, p1, p2, r1, r2, dt);
   }
 }
 ////////////////////////////////////////////////////////////
 void physics::collision::ColResponse::applyImpulseDirectly(
     double impulse, const Eigen::Vector2d& n, env::bodies::Polygon& p1,
     env::bodies::Polygon& p2, const Eigen::Vector2d& r1,
-    const Eigen::Vector2d& r2, double dt, Collision& collision) {
+    const Eigen::Vector2d& r2, double dt) {
   // Velocity
   Eigen::Vector2d p1T = -impulse * n / p1.getMass() * dt;
   Eigen::Vector2d p2T = impulse * n / p2.getMass() * dt;

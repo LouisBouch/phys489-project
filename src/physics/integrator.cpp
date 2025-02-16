@@ -38,7 +38,8 @@ void physics::applyForces(env::Environment& env, double dt) {
       }
       applyForceToPoly(p, force.second, dt);
     }
-    // Dampen rotation by some percentage per second if a force was applied.
+    // Dampen rotation by some percentage per second if user is dragging the
+    // polygon was applied.
     if (forcesMap.size() > 0 && dragged) {
       p.addAngV(p.getAngV() * (std::pow(1 - r, dt) - 1));
     }

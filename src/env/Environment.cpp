@@ -67,7 +67,7 @@ void env::Environment::unlockEnv() { env_m.unlock(); }
 bool env::Environment::addToTimeBuffer(int time) {
   int_least64_t current = timeBuffer.load();
   while (true) {
-    if (time + timeBuffer.load() < 0) {
+    if (time + current < 0) {
       return false;
     }
     if (timeBuffer.compare_exchange_weak(current, current + time)) {
