@@ -1,9 +1,11 @@
 #pragma once
 
 #include "env/bodies/Polygon.hpp"
+#include "physics/collision/ColDetector.hpp"
 #include "physics/collision/Collision.hpp"
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
+#include <memory>
 
 namespace physics::collision {
 class ColResponse {
@@ -25,7 +27,16 @@ public:
    * @param collisions List of collisions to resolve.
    * @param dt Time delta of the physics engine.
    */
-  void resolveCollisions(std::vector<Collision>& collisions, double dt);
+  void resolveCollisions(
+      std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>,
+                         PairHash>& collisions,
+      double dt);
+  /**
+   * @brief Applies warmstarting to a collision.
+   *
+   * @param collision Collision to warm start.
+   */
+  void warmStart(Collision& collision);
 
 private:
   bool coupled; //< Whether or not to treat the collision manifold as a coupled
@@ -36,11 +47,13 @@ private:
                 // the collisions in order to get a better position response.
 
   /**
-   * @brief Given a collision and whether to solve the contact manifold as a
-   * coupled system or not, find the impulse magnitude for each contact.
+   * @brief Given a collision, find the impulse magnitude for each contact.
    * j = -v_rel.dot(n) /
    * (1/m_a + 1/m_b + (r_a.cross(n))²/I_a + (r_b.cross(n))²/I_b)
    * Where v_rel = (v_b + w_b.cross(r_b)) - (v_a + w_a.cross(r_a))
+   *
+   * This comes from solving:
+   * J^T (V + M^-1 J * j) = V_target
    *
    * @param collision The collision containing the contact manifold.
    * @param n Vector along which the velocity contraint must be met.
@@ -53,12 +66,74 @@ private:
   double findImpulseMagnitude(Collision& collision, const Eigen::Vector2d& n,
                               int c, double targetVel = 0);
   /**
+   * @brief Given a collsion, find the impulse as a coupled system.
+   *
+   * @param collision The collision containing the contact manifold.
+   * @param n Vector along which the velocity contraint must be met.
+   * @param targetVel Target velocity of the constraint. (Positive value to pull
+   * objects apart)
+   *
+   * Solves the system:
+   *
+   *                    1                     2                  3
+   * (J_1^T V + J_1^T M^-1 J_1 * j_1 + J_1^T M^-1 J_2 * j_2) = V_target1
+   * (J_2^T V + J_2^T M^-2 J_1 * j_1 + J_2^T M^-1 J_2 * j_2) = V_target2
+   *
+   * |J_1^T V| + |J_1^T M^-1 J_1  J_1^T M^-1 J_2| |j_1| = V_target1
+   * |J_2^T V| + |J_2^T M^-1 J_1  J_2^T M^-1 J_2| |j_2| = V_target2
+   *
+   * m represents rows.
+   *
+   * Where
+   * V^T = [V_a^T, W_a^T, V_b^T, W_b^T]
+   * J^T = [-n^T, -(r_a x n)^T, n^T, (r_b x n)^T] (Jacobian for a given contact
+   * point) M = diagonal 4x4 with value [1/m_a, 1/I_a, 1/m_b, 1/I_b] on the
+   * diagonal.
+   *
+   * 1. The relative velocity at contact point m caused by impulse 1.
+   * 2. The relative velocity at contact point m caused by impulse 2.
+   * 3. Target relative velocity at contact point m.
+   *
+   * @return An impulse magnitude for the contact manifold.
+   */
+  // TODO: Find a way to stabilize ill conditioned matrices without introducing
+  // errors.
+  std::vector<double>
+  findImpulseMagnitudeCoupled(Collision& collision, const Eigen::Vector2d& n,
+                              const Eigen::Vector2d& targetVel = {0, 0});
+  /**
+   * @brief Given a collsion contact, find the impulse as a coupled system.
+   *
+   * @param collision The collision containing the contact manifold.
+   * @param n1 Vector along which the first contraint must be met.
+   * @param n2 Vector along which the second contraint must be met.
+   * @param c The point on the contact manifold.
+   * @param targetVel Target velocity of the constraint. (First value relates to
+   * first direction vector)
+   *
+   * @return An impulse magnitude for the contact manifold.
+   */
+  std::vector<double>
+  findImpulseMagnitudeCoupledSingle(Collision& collision,
+                                    const Eigen::Vector2d& n1,
+                                    const Eigen::Vector2d& n2, int c,
+                                    const Eigen::Vector2d& targetVel = {0, 0});
+  /**
    * @brief Resolves a single collision velocity constraint.
    *
    * @param collision The collision to be resolved.
    *
    */
   void enforceVelConstraint(Collision& collision);
+
+  /**
+   * @brief Resolves a single collision velocity and friction constraint.
+   * (Coupled)
+   *
+   * @param collision The collision to be resolved.
+   *
+   */
+  void enforceVelFricConstraint(Collision& collision);
 
   /**
    * @brief Applies impulse to contact point.

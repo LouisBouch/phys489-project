@@ -51,8 +51,6 @@ void physics::PhysicsEngine::simLoop() {
     // Apply forces on polygons.
     applyForces(*env, dt * slowdown);
 
-    stepEnvironment(*env, dt * slowdown);
-    env->addToTotalTime(microDt * slowdown);
 
     // Detect collisions.
     colDet.findCollisions();
@@ -61,6 +59,10 @@ void physics::PhysicsEngine::simLoop() {
     if (colDet.getCollisions().size() != 0) {
       colRes.resolveCollisions(colDet.getCollisions(), dt);
     }
+    // Step the environment forward in time.
+    stepEnvironment(*env, dt * slowdown);
+    env->addToTotalTime(microDt * slowdown);
+
     env->unlockEnv();
   }
 }

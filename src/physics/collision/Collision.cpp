@@ -3,9 +3,12 @@
 #include "utils/geo/geoUtils.hpp"
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstdlib>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -27,7 +30,11 @@ physics::collision::Collision::create(env::bodies::Polygon& p1, int subP1I,
 //////////////////////////////CONSTRUCTORS//////////////////////////////
 physics::collision::Collision::Collision(const Collision& col)
     : Collision(col.p1, col.subP1I, col.p2, col.subP2I, col.n, col.refEdgePI,
-                col.manifold) {}
+                col.manifold) {
+  accNormalImpulse = col.accNormalImpulse;
+  accPseudoImpulse = col.accPseudoImpulse;
+  accTangentImpulse = col.accTangentImpulse;
+}
 
 ////////////////////////////////////////////////////////////
 physics::collision::Collision::Collision(env::bodies::Polygon& p1, int subP1I,
@@ -37,7 +44,8 @@ physics::collision::Collision::Collision(env::bodies::Polygon& p1, int subP1I,
                                          std::vector<Eigen::Vector2d> manifold)
     : p1(p1), p2(p2), n(n.normalized()), manifold(manifold),
       refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I),
-      accImpulse(manifold.size()), accPseudoImpulse(manifold.size()) {}
+      accNormalImpulse(manifold.size()), accPseudoImpulse(manifold.size()),
+      accTangentImpulse(manifold.size()) {}
 //////////////////////////////GETTERS//////////////////////////////
 env::bodies::Polygon& physics::collision::Collision::getFirstPolygon() {
   return p1;
@@ -188,8 +196,13 @@ const std::array<int, 2>& physics::collision::Collision::getRefEdgePI() const {
 }
 ////////////////////////////////////////////////////////////
 const std::vector<double>&
-physics::collision::Collision::getAccImpulse() const {
-  return accImpulse;
+physics::collision::Collision::getAccNormalImpulse() const {
+  return accNormalImpulse;
+}
+////////////////////////////////////////////////////////////
+const std::vector<double>&
+physics::collision::Collision::getAccTangentImpulse() const {
+  return accTangentImpulse;
 }
 ////////////////////////////////////////////////////////////
 const std::vector<double>&
@@ -198,11 +211,39 @@ physics::collision::Collision::getAccPseudoImpulse() const {
 }
 
 ////////////////////////////////////////////////////////////
-void physics::collision::Collision::addImpulse(double impulse,
-                                               int contactPoint) {
-  if (contactPoint < this->accImpulse.size()) {
-    this->accImpulse[contactPoint] =
-        std::max<double>(0, this->accImpulse[contactPoint] + impulse);
+void physics::collision::Collision::addNormalImpulse(double impulse,
+                                                     int contactPoint) {
+  if (contactPoint < this->accNormalImpulse.size()) {
+    this->accNormalImpulse[contactPoint] =
+        std::max<double>(0, this->accNormalImpulse[contactPoint] + impulse);
+    // this->accNormalImpulse[contactPoint] =
+    //     this->accNormalImpulse[contactPoint] + impulse;
+  }
+}
+
+////////////////////////////////////////////////////////////
+void physics::collision::Collision::setNormalImpulse(
+    const std::vector<double>& impulse) {
+  if (impulse.size() == this->accNormalImpulse.size()) {
+    this->accNormalImpulse = impulse;
+  }
+}
+////////////////////////////////////////////////////////////
+void physics::collision::Collision::addTangentImpulse(double impulse,
+                                                      int contactPoint) {
+  double fricCoeff = std::sqrt(p1.getFrictionCoef() * p2.getFrictionCoef());
+  double normalImpulse = std::abs(getAccNormalImpulse()[contactPoint]);
+  if (contactPoint < this->accTangentImpulse.size()) {
+    this->accTangentImpulse[contactPoint] =
+        std::clamp(this->accTangentImpulse[contactPoint] + impulse,
+                   -fricCoeff * normalImpulse, fricCoeff * normalImpulse);
+  }
+}
+////////////////////////////////////////////////////////////
+void physics::collision::Collision::setTangentImpulse(
+    const std::vector<double>& impulse) {
+  if (impulse.size() == this->accTangentImpulse.size()) {
+    this->accTangentImpulse = impulse;
   }
 }
 ////////////////////////////////////////////////////////////
@@ -215,7 +256,7 @@ void physics::collision::Collision::addPseudoImpulse(double impulse,
 }
 ////////////////////////////////////////////////////////////
 double physics::collision::Collision::contactPenetration(int contactPoint) {
-  if (contactPoint < this->accImpulse.size()) {
+  if (contactPoint < this->accNormalImpulse.size()) {
     const Eigen::Matrix2Xd& vs = p1.getGlobalVertices();
     const std::vector<int>& subP = p1.getConvexDecomp()[subP1I];
     return -utils::geo::projectPointsMagnitude(
@@ -234,11 +275,35 @@ bool physics::collision::Collision::updateCollision() {
   if (opt.has_value() && opt.value().size() > 0) {
     // Update impulse vectors if necessary.
     if (manifold.size() != opt.value().size()) {
-      accImpulse = std::vector<double>(opt.value().size());
-      accPseudoImpulse = std::vector<double>(accImpulse);
+      accNormalImpulse = std::vector<double>(opt.value().size());
+      accPseudoImpulse = std::vector<double>(accNormalImpulse.size());
+      accTangentImpulse = std::vector<double>(accNormalImpulse.size());
     }
     manifold = opt.value();
     return true;
   }
   return false;
+}
+////////////////////////////////////////////////////////////
+double physics::collision::Collision::findDifference(
+    physics::collision::Collision& col) {
+  // Ensure collisions match.
+  if ((col.getFirstPolygon().getId() != p1.getId() &&
+       col.getFirstPolygon().getId() != p2.getId()) ||
+      (col.getSecondPolygon().getId() != p1.getId() &&
+       col.getSecondPolygon().getId() != p2.getId()) ||
+      col.getManifold().size() != manifold.size()) {
+    return std::numeric_limits<double>::max();
+  }
+  // If they do, return the minimum average squared distance between the
+  // collision points.
+  const std::vector<Eigen::Vector2d>& maniC = col.getManifold();
+  if (maniC.size() == 1) {
+    return (maniC[0] - manifold[0]).squaredNorm();
+  }
+  return std::min<double>((maniC[0] - manifold[0]).squaredNorm() +
+                              (maniC[1] - manifold[1]).squaredNorm(),
+                          (maniC[0] - manifold[1]).squaredNorm() +
+                              (maniC[1] - manifold[0]).squaredNorm()) /
+         2.0;
 }

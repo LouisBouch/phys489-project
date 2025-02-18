@@ -12,8 +12,9 @@
 
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
-                              double angV, Eigen::Vector2d velocity, int id,
-                              double density)
+                              double angV, Eigen::Vector2d velocity,
+                              double density, double restitutionCoef,
+                              double frictionCoef, int id)
     : nbVertices(vertices.cols()), area(findArea(vertices)), colliding(false),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
@@ -24,7 +25,8 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       id(id), moment(findMoment()),
       convexification(utils::geo::convexify(vertices, triangulation)),
       furthestVDist(findFurthestVDist()), density(density),
-      mass(area * density) {
+      mass(area * density), frictionCoef(frictionCoef),
+      restitutionCoef(restitutionCoef) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -37,7 +39,8 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 ////////////////////////////////////////////////////////////
 env::bodies::Polygon::Polygon(const Polygon& polygon)
     : Polygon(polygon.getLocalVertices(), polygon.rot, polygon.angV,
-              polygon.velocity, polygon.id, polygon.density) {
+              polygon.velocity, polygon.density, polygon.restitutionCoef,
+              polygon.frictionCoef, polygon.id) {
   translate(polygon.getCentroid());
   // Ensure forces are copied properly.
   for (const auto& force : polygon.forces) {
@@ -293,4 +296,19 @@ void env::bodies::Polygon::setMass(double mass) {
   this->mass = mass;
   this->density = mass / area;
   this->moment = findMoment();
+}
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getFrictionCoef() const { return frictionCoef; }
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::getResitutionCoef() const {
+  return restitutionCoef;
+}
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setFrictionCoef(double frictionCoef) {
+  this->frictionCoef = frictionCoef;
+}
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setRestitutionCoef(double restitutionCoef) {
+  this->restitutionCoef = restitutionCoef;
 }

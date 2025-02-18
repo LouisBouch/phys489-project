@@ -15,7 +15,9 @@ public:
    * @param vertices Vertices of the polygon in COUNTERCLOCKWISE order.
    */
   Polygon(const Eigen::Matrix2Xd& vertices, double rot = 0, double angV = 0,
-          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0}, int id = -1, double density = 1);
+          const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0},
+          double density = 1, double restitutionCoef = 0,
+          double frictionCoef = 1, int id = -1);
 
   /**
    * @brief Copy constructor.
@@ -262,18 +264,44 @@ public:
   double getMass() const;
 
   /**
-   * @brief Get density of polygon.
+   * @brief Set density of polygon.
    *
-   * @return Density of the polygon.
+   * @param density Density of the polygon.
    */
   void setDensity(double density);
 
   /**
-   * @brief Gets mass of polygon.
+   * @brief Sets mass of polygon.
    *
-   * @return Mass of the polygon.
+   * @param mass Mass of the polygon.
    */
   void setMass(double mass);
+  /**
+   * @brief Gets friction coefficient.
+   *
+   * @return Friction coefficient.
+   */
+  double getFrictionCoef() const;
+  /**
+   * @brief Gets restitution coefficient.
+   *
+   * @return Restitution coefficient.
+   */
+  double getResitutionCoef() const;
+
+  /**
+   * @brief Set friction coefficient.
+   *
+   * @param frictionCoef Friction coefficient.
+   */
+  void setFrictionCoef(double frictionCoef);
+
+  /**
+   * @brief Set restitution coefficient.
+   *
+   * @param restitutionCoef Restitution coefficient.
+   */
+  void setRestitutionCoef(double frictionCoef);
 
 private:
   int id;                   //< ID of polygon to help identify it.
@@ -295,7 +323,7 @@ private:
       triangulation; //< Triangulation of the polygon. Each column represents
                      // the counterclockwise vertex indices of a triangle.
   mutable Eigen::Matrix2Xd
-      globalVertices;  //< Array of vertices with respect to global coordinates
+      globalVertices; //< Array of vertices with respect to global coordinates
   mutable Eigen::Vector2d
       lastCentroid; //< Position of centroid after last call to
                     // getGlobalVertices.
@@ -310,7 +338,9 @@ private:
   double furthestVDist; //< Furthest distance between centroid and a vertex.
   double density;       //< Density of the polygon.
   double mass;          //< Mass of the polygon.
-  double moment; //< Moment of inertia of the polygon about its centroid.
+  double moment;        //< Moment of inertia of the polygon about its centroid.
+  double restitutionCoef; //< Coefficient of resitution of the object.
+  double frictionCoef;    //< Coefficient of friction of the object.
 
   /**
    * @brief Finds the centroid of the polygon.

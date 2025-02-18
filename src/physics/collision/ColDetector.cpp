@@ -6,17 +6,22 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <utility>
 #include <vector>
 
 ////////////////////////////////////////////////////////////
 physics::collision::ColDetector::ColDetector(env::Environment* env)
-    : env(env) {}
+    : env(env), curColBuffer(0), lastAddedCol(std::make_pair(-1, -1)) {}
 ////////////////////////////////////////////////////////////
-std::vector<physics::collision::Collision>&
+std::unordered_map<std::pair<int, int>,
+                   std::unique_ptr<physics::collision::Collision>,
+                   physics::collision::PairHash>&
 physics::collision::ColDetector::findCollisions() {
   // Empty previous collisions.
   std::vector<env::bodies::Polygon>& polygons = env->getPolygons();
-  collisions.clear();
+  switchColBuffer();
+  getCollisions().clear();
   int nbPoly = polygons.size();
   std::vector<int_fast8_t> collisionStatus(nbPoly, 0);
   // Check for collisions between each pair of polygons.
@@ -33,6 +38,31 @@ physics::collision::ColDetector::findCollisions() {
       }
       collisionStatus[i] = 1;
       collisionStatus[j] = 1;
+
+      // Sets up warm starting.
+      if (lastAddedCol.first != -1) {
+        // Check if collisions existed in previous time step.
+        auto it = getCollisionsOld().find(lastAddedCol);
+        it = it != getCollisionsOld().end()
+                 ? it
+                 : getCollisionsOld().find(
+                       {lastAddedCol.second, lastAddedCol.first});
+        // If found value, apply old impulse to new collision.
+        if (it != getCollisionsOld().end()) {
+          // Last collision inserted.
+          Collision& colNew = *getCollisions().find(lastAddedCol)->second.get();
+          Collision& colOld = *it->second.get();
+          // Check if collisions are close enough to transfer impulses.
+          if (colNew.findDifference(colOld) < 500) {
+            // Normal impulse.
+            colNew.setNormalImpulse(it->second->getAccNormalImpulse());
+
+            // Tangential impulse.
+            colNew.setTangentImpulse(it->second->getAccTangentImpulse());
+          }
+        }
+        lastAddedCol.first = -1;
+      }
     }
   }
   // Updates collision status of polygons.
@@ -44,7 +74,7 @@ physics::collision::ColDetector::findCollisions() {
     polygons[i].setColliding(false);
   }
   env->unlockPolygons();
-  return collisions;
+  return getCollisions();
 }
 
 ////////////////////////////////////////////////////////////
@@ -148,13 +178,21 @@ bool physics::collision::ColDetector::subtestSATTria(
     std::optional<Collision> col = physics::collision::Collision::create(
         p1, subP1I, p2, subP2I, n, refEdge);
     if (col.has_value()) {
-      collisions.push_back(col.value());
+      // getCollisions().push_back(col.value());
+      getCollisions().emplace(std::make_pair(p1.getId(), p2.getId()),
+                              std::make_unique<Collision>(col.value()));
+      lastAddedCol.first = p1.getId();
+      lastAddedCol.second = p2.getId();
     }
   } else {
     std::optional<Collision> col = physics::collision::Collision::create(
         p2, subP2I, p1, subP1I, n, refEdge);
     if (col.has_value()) {
-      collisions.push_back(col.value());
+      // getCollisions().push_back(col.value());
+      getCollisions().emplace(std::make_pair(p2.getId(), p1.getId()),
+                              std::make_unique<Collision>(col.value()));
+      lastAddedCol.first = p2.getId();
+      lastAddedCol.second = p1.getId();
     }
   }
   return true;
@@ -199,9 +237,32 @@ bool physics::collision::ColDetector::SATHelper(
 }
 
 ////////////////////////////////////////////////////////////
-std::vector<physics::collision::Collision>&
+std::unordered_map<std::pair<int, int>,
+                   std::unique_ptr<physics::collision::Collision>,
+                   physics::collision::PairHash>&
 physics::collision::ColDetector::getCollisions() {
-  return collisions;
+  // Returns collision depending on current collision buffer.
+  if (curColBuffer == 0) {
+    return collisions0;
+  }
+  return collisions1;
+}
+
+////////////////////////////////////////////////////////////
+std::unordered_map<std::pair<int, int>,
+                   std::unique_ptr<physics::collision::Collision>,
+                   physics::collision::PairHash>&
+physics::collision::ColDetector::getCollisionsOld() {
+  // Returns collision depending on current collision buffer.
+  if (curColBuffer != 0) {
+    return collisions0;
+  }
+  return collisions1;
+}
+
+////////////////////////////////////////////////////////////
+void physics::collision::ColDetector::switchColBuffer() {
+  curColBuffer = (curColBuffer + 1) % 2;
 }
 
 ////////////////////////////////////////////////////////////

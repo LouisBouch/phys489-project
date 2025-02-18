@@ -81,60 +81,58 @@ int main() {
   //     Eigen::MatrixXd{{200, 150}, {200, 250}, {100, 250}}.transpose(),
   //     35 / 360.0 * (2 * M_PI), 0);
   //
-  env::bodies::Square s1(Eigen::Vector2d{100, 60}, 100);
+  env::bodies::Square s1(Eigen::Vector2d{100, 80}, 100);
   // env::bodies::Square s2(Eigen::Vector2d{800, 400}, 100,
   //                        45.0 / 360 * (2 * M_PI));
   env::bodies::Square s3(Eigen::Vector2d{100, 250}, 100, 0, 0);
   s3.setDensity(2);
   env::bodies::Polygon t8(
-      Eigen::MatrixXd{
-          {125, 20}, {325, 20}, {275, 70}}
-          .transpose(), 0, 0, {0, 25});
+      Eigen::MatrixXd{{125, 20}, {325, 20}, {275, 70}}.transpose(), 0, 0,
+      {0, 25});
 
   env::bodies::Polygon t9(
-      Eigen::MatrixXd{
-          {300, 100}, {500, 100}, {450, 150}}
-          .transpose(),
-      0, 0, {0, 0});
+      Eigen::MatrixXd{{300, 100}, {500, 100}, {450, 150}}.transpose(), 0, 0,
+      {0, 0});
 
-  env::bodies::Polygon floor(
-      Eigen::MatrixXd{
-          {0, 0+10}, {0, -100+10}, {1e6, -100+10}, {1e6, 0+10}}
-          .transpose());
+  env::bodies::Polygon floor(Eigen::MatrixXd{
+      {0, 0 + 20}, {0, -100 + 20}, {1e6, -100 + 20}, {1e6, 0 + 20}}
+                                 .transpose());
   floor.setMass(std::numeric_limits<double>::max());
-  env::bodies::Polygon leftWall(
-      Eigen::MatrixXd{
-          {0+10, 0+10}, {0+10, 1e6+10}, {-100+10, 1e6+10}, {-100+10, 0+10}}
-          .transpose());
+  env::bodies::Polygon leftWall(Eigen::MatrixXd{{0 + 20, 0 + 20},
+                                                {0 + 20, 1e6 + 20},
+                                                {-100 + 20, 1e6 + 20},
+                                                {-100 + 20, 0 + 20}}
+                                    .transpose());
   leftWall.setMass(std::numeric_limits<double>::max());
+  env::bodies::Polygon slope(Eigen::MatrixXd{
+      {1200 + 20, 0 + 30}, {2000 + 20, 0 + 30}, {2000 + 20, 300 + 30}}
+                                 .transpose());
+  slope.setFrictionCoef(1e12);
+  // slope.setMass(std::numeric_limits<double>::max());
   // Create environment
   env::Environment simEnv;
+  slope.addVelocity({-100, 0});
+  slope.addAngV(-0.2);
   simEnv.addPolygon(floor, false);
   simEnv.addPolygon(leftWall, false);
+  simEnv.addPolygon(slope, false);
   // simEnv.addPolygon(t1);
   // simEnv.addPolygon(c1);
   // simEnv.addPolygon(c2);
   // simEnv.addPolygon(c3);
   // simEnv.addPolygon(c4);
-  simEnv.addPolygon(s1);
-  s1.rotate(M_PI/4);
-  s1.translate({0, 170});
-  simEnv.addPolygon(s1);
-  s1.rotate(M_PI/4);
-  s1.translate({0, 170});
-  simEnv.addPolygon(s1);
-  s1.rotate(M_PI/4);
-  s1.translate({0, 170});
-  simEnv.addPolygon(s1);
-  s1.rotate(M_PI/4);
-  s1.translate({0, 170});
-  simEnv.addPolygon(s1);
-  s1.rotate(M_PI/4);
-  s1.translate({0, 170});
-  simEnv.addPolygon(s1);
   // simEnv.addPolygon(t9);
   // simEnv.addPolygon(t8);
-
+  s1.setFrictionCoef(1e12);
+  s1.addPos({0, -5});
+  // simEnv.addPolygon(s1);
+  // s1.addPos({95, 110.0001});
+  // simEnv.addPolygon(s1);
+  for (int i = 0; i < 0; i++) {
+    // s1.rotate(M_PI / 4);
+    s1.translate({0, 170});
+    simEnv.addPolygon(s1);
+  }
   // Create physics engine
   physics::PhysicsEngine engine(0.01);
   engine.setEnv(&simEnv);

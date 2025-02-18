@@ -2,6 +2,7 @@
 
 #include "eigen3/Eigen/Dense"
 #include "env/bodies/Polygon.hpp"
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <optional>
 namespace physics::collision {
 class Collision {
@@ -68,11 +69,20 @@ public:
   const std::array<int, 2>& getRefEdgePI() const;
 
   /**
-   * @brief Gets the current accumulated impulse for each contact point.
+   * @brief Gets the current accumulated impulse for each contact point in the
+   * normal direction.
    *
    * @return Impulse of each contact point.
    */
-  const std::vector<double>& getAccImpulse() const;
+  const std::vector<double>& getAccNormalImpulse() const;
+
+  /**
+   * @brief Gets the current accumulated impulse for each contact point in the
+   * tangent direction.
+   *
+   * @return Impulse of each contact point.
+   */
+  const std::vector<double>& getAccTangentImpulse() const;
 
   /**
    * @brief Gets the current accumulated pseudo impulse for each contact point.
@@ -82,13 +92,36 @@ public:
   const std::vector<double>& getAccPseudoImpulse() const;
 
   /**
-   * @brief Adds impulse to contact in manifold.
+   * @brief Adds normal impulse to contact in manifold.
    *
    * @param impulse Magnitude of impulse.
    * @param contactPoint Which of the contact point on the manifold to add an
    * impulse to.
    */
-  void addImpulse(double impulse, int contactPoint);
+  void addNormalImpulse(double impulse, int contactPoint);
+
+  /**
+   * @brief Sets the normal impulse to a specific value.
+   *
+   * @param impulse Magnitude of impulse.
+   */
+  void setNormalImpulse(const std::vector<double>& impulse);
+
+  /**
+   * @brief Sets the tangent impulse to a specific value.
+   *
+   * @param impulse Magnitude of impulse.
+   */
+  void setTangentImpulse(const std::vector<double>& impulse);
+
+  /**
+   * @brief Adds tangent impulse to contact in manifold.
+   *
+   * @param impulse Magnitude of impulse.
+   * @param contactPoint Which of the contact point on the manifold to add an
+   * impulse to.
+   */
+  void addTangentImpulse(double impulse, int contactPoint);
 
   /**
    * @brief Adds pseudo impulse to contact in manifold.
@@ -120,6 +153,17 @@ public:
    */
   bool updateCollision();
 
+  /**
+   * @brief Obtains the average minimum average squared distance between the
+   * closest contact points.
+   *
+   * @param col Collision to compare the distance to.
+   *
+   * @return The minimum average squared distance between the closest contacts.
+   * (Returns infinity if collisions don't match)
+   */
+  double findDifference(Collision& col);
+
 private:
   std::array<int, 2>
       refEdgePI; //< Indices of sub polygon vertices of edge where collision
@@ -137,9 +181,13 @@ private:
       manifold; //< Contact manifold of the collision. (Can have at most 2
                 // points)
   std::vector<double>
-      accImpulse; //< Total impulse applied to each point on the manifold.
+      accNormalImpulse; //< Total impulse applied to each point on the manifold
+                        // in the normal direction.
   std::vector<double> accPseudoImpulse; //< Total pseudo impulse applied to each
                                         // point on the manifold.
+  std::vector<double>
+      accTangentImpulse; //< Total impulse applied to each
+                         // point on the manifold in the tangent direction.
 
   /**
    * @brief Represents a collision between two polygons.

@@ -4,8 +4,19 @@
 #include "env/bodies/Polygon.hpp"
 #include "physics/collision/Collision.hpp"
 #include <eigen3/Eigen/Dense>
+#include <memory>
+#include <unordered_map>
+#include <utility>
 
 namespace physics::collision {
+// Hash for a pair of ints.
+struct PairHash {
+  std::size_t operator()(const std::pair<int, int>& p) const {
+    std::size_t h1 = std::hash<int>{}(p.first);
+    std::size_t h2 = std::hash<int>{}(p.second);
+    return h1 ^ (31 * h2);
+  }
+};
 class ColDetector {
 public:
   /**
@@ -21,14 +32,30 @@ public:
    * @param env Environment where collisions will occur.
    *
    */
-  std::vector<physics::collision::Collision>& findCollisions();
+  std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>, PairHash>&
+  findCollisions();
 
   /**
    * @brief Gets the list of collisions in the environment.
    *
    * @return List of collisions.
    */
-  std::vector<Collision>& getCollisions();
+  std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>, PairHash>&
+  getCollisions();
+
+  /**
+   * @brief Gets the list of collisions in the environment at the previous
+   * timestep.
+   *
+   * @return List of old collisions.
+   */
+  std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>, PairHash>&
+  getCollisionsOld();
+
+  /**
+   * @brief Switches the collision buffer. Old becoems new and new becoems old.
+   */
+  void switchColBuffer();
 
   /**
    * @brief Sets the environment the class will work with.
@@ -39,7 +66,12 @@ public:
 
 private:
   env::Environment* env; //< Environment in which collisions will take place.
-  std::vector<Collision> collisions; //< List of collisions in the environment.
+  std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>, PairHash>
+      collisions0; //< List of collisions in the environment. (First buffer)
+  std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>, PairHash>
+      collisions1;  //< List of collisions in the environment. (Second buffer)
+  int curColBuffer; //< Current collision buffer.
+  std::pair<int, int> lastAddedCol; //< Key of the last added collision.
 
   /**
    * @brief Test whether a collision is happening between polygons using
