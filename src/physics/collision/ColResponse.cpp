@@ -14,8 +14,12 @@
 
 //////////////////////////////CONSTRUCTOR//////////////////////////////
 physics::collision::ColResponse::ColResponse(int nbIterations, int nbPosIt,
-                                             bool coupled)
-    : nbVelIt(nbIterations), nbPosIt(nbPosIt), coupled(coupled) {}
+                                             double minRelVel,
+                                             double minRelFric)
+    : nbVelIt(nbIterations), nbPosIt(nbPosIt), minRelVel(minRelVel),
+      minRelFric(minRelFric),
+      relVelR(std::exp(std::log(minRelVel) / (nbIterations - 1))),
+      relFricR(std::exp(std::log(minRelFric) / (nbIterations - 1))) {}
 
 ////////////////////////////////////////////////////////////
 double physics::collision::ColResponse::findImpulseMagnitude(
@@ -68,21 +72,31 @@ void physics::collision::ColResponse::resolveCollisions(
     std::unordered_map<std::pair<int, int>, std::unique_ptr<Collision>,
                        PairHash>& collisions,
     double dt) {
+  // Randomize order of collisions.
+  // std::vector<Collision*> colsRandom;
+  // colsRandom.reserve(collisions.size());
+  // for (auto& colPair : collisions) {
+  //   colsRandom.push_back(colPair.second.get());
+  // }
+  // std::mt19937 r(seed++);
+  // std::shuffle(colsRandom.begin(), colsRandom.end(), r);
   // Start by applying warm started impulses.
   for (auto& colPair : collisions) {
     warmStart(*colPair.second.get());
   }
   // Apply velocity constraints and friction constraints.
+  relaxFric = relaxVel = 1;
   for (int i = 0; i < nbVelIt; i++) {
     for (auto& colPair : collisions) {
-      enforceVelFricConstraint(*colPair.second.get());
+      // for (Collision* col : colsRandom) {
+      enforceVelConstraint(*colPair.second.get());
     }
-    // for (auto& colPair : collisions) {
-    //   enforceVelConstraint(*colPair.second.get());
-    // }
-    // for (auto& colPair : collisions) {
-    //   enforceFrictionConstraint(*colPair.second.get());
-    // }
+    for (auto& colPair : collisions) {
+      // for (Collision* col : colsRandom) {
+      enforceFrictionConstraint(*colPair.second.get());
+    }
+    relaxVel *= relVelR;
+    relaxFric *= relFricR;
   }
   // Apply position constraints.
   for (int i = 0; i < nbPosIt; i++) {
@@ -137,8 +151,8 @@ void physics::collision::ColResponse::enforceVelConstraint(
         vs.col(subP[refEdge[0]]) -
         p1.getCentroid(); // Contact point on first polygon relative
                           // to centroid.
-    applyImpulse(deltaImp, n, p1, p2, r1, r2);
-    std::cout << "vel: " << deltaImp << "\n";
+    applyImpulse(deltaImp * relaxVel, n, p1, p2, r1, r2);
+    // std::cout << "vel: " << deltaImp << "\n";
   }
 }
 ////////////////////////////////////////////////////////////
@@ -202,13 +216,12 @@ void physics::collision::ColResponse::enforceFrictionConstraint(
     // << "vel before: "
     // << (p2.getVelocity() + Eigen::Vector2d{-w * r2.y(), w * r2.x()}).dot(t)
     // << "\n";
-    applyImpulse(deltaImp, t, p1, p2, r1, r2);
-    w = p2.getAngV();
+    applyImpulse(deltaImp * relaxFric, t, p1, p2, r1, r2);
+    // w = p2.getAngV();
     // std::cout
     // << "vel after: "
     // << (p2.getVelocity() + Eigen::Vector2d{-w * r2.y(), w * r2.x()}).dot(t)
     // << "\n";
-    std::cout << "friction: " << deltaImp << "\n";
   }
 }
 
@@ -513,6 +526,8 @@ physics::collision::ColResponse::findImpulseMagnitudeCoupledSingle(
   // A.diagonal().array() += 1e-3;
 
   Eigen::Vector2d x = A.colPivHouseholderQr().solve(b);
-  std::cout << x << "\n";
+  std::cout << "A:\n" << A << "\n";
+  std::cout << "b:\n" << b << "\n";
+  std::cout << "x:\n" << x << "\n";
   return {x.x(), x.y()};
 }

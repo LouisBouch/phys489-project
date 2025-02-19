@@ -17,10 +17,11 @@ public:
    * the collisions for impulse velocities.
    * @param nbPosIt Maximum number of times the resolver will iterate over
    * the collisions for pseudo impulses.
-   * @param coupled Whether or not to treat the collision manifold as a coupled.
+   * @param minRelVel Minimum relaxation of velocity for the last iteration.
+   * @param minRelFric Minimum relaxation of friction for the last iteration.
    */
-  ColResponse(int nbIterations = 8, int nbPosIt = 4, bool coupled = false);
-
+  ColResponse(int nbIterations = 8, int nbPosIt = 4, double minRelVel = 0.95,
+              double minRelFric = 0.85);
   /**
    * @brief Resolves all collisions in the list.
    *
@@ -45,6 +46,15 @@ private:
                 // the collisions in order to get a better velocity response.
   int nbPosIt;  //< Maximum number of times the resolver will iterate over
                 // the collisions in order to get a better position response.
+  double relaxVel;   //< Relaxation factor for velocity.
+  double relaxFric;  // Relaxation factor for friction.
+  double minRelVel;  //< Minimum relaxation of velocity for the last iteration.
+  double minRelFric; //< Minimum relaxation of friction for the last iteration.
+  double relVelR;    //< Ratio of velocity relaxation factor to keep after each
+                     // iteration.
+  double relFricR;   //< Ratio of friction relaxation factor to keep after each
+                     // iteration. Tuned in order to reach minRelFric after all
+                     // the iterations.
 
   /**
    * @brief Given a collision, find the impulse magnitude for each contact.
@@ -77,7 +87,7 @@ private:
    *
    *                    1                     2                  3
    * (J_1^T V + J_1^T M^-1 J_1 * j_1 + J_1^T M^-1 J_2 * j_2) = V_target1
-   * (J_2^T V + J_2^T M^-2 J_1 * j_1 + J_2^T M^-1 J_2 * j_2) = V_target2
+   * (J_2^T V + J_2^T M^-1 J_1 * j_1 + J_2^T M^-1 J_2 * j_2) = V_target2
    *
    * |J_1^T V| + |J_1^T M^-1 J_1  J_1^T M^-1 J_2| |j_1| = V_target1
    * |J_2^T V| + |J_2^T M^-1 J_1  J_2^T M^-1 J_2| |j_2| = V_target2
@@ -113,6 +123,9 @@ private:
    *
    * @return An impulse magnitude for the contact manifold.
    */
+  // TODO: Enforce complementary restrictions (Convert system to LCP). Right now
+  // it does not take them into account which yields tthe wrong answer under
+  // certain conditions.
   std::vector<double>
   findImpulseMagnitudeCoupledSingle(Collision& collision,
                                     const Eigen::Vector2d& n1,

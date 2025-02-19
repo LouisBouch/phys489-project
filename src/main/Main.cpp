@@ -105,14 +105,15 @@ int main() {
                                     .transpose());
   leftWall.setMass(std::numeric_limits<double>::max());
   env::bodies::Polygon slope(Eigen::MatrixXd{
-      {1200 + 20, 0 + 30}, {2000 + 20, 0 + 30}, {2000 + 20, 300 + 30}}
+      {1200 + 20, 0 + 50}, {2000 + 20, 0 + 50}, {2000 + 20, 300 + 50}}
                                  .transpose());
-  slope.setFrictionCoef(1e12);
+  slope.setFrictionCoef(6);
   // slope.setMass(std::numeric_limits<double>::max());
   // Create environment
   env::Environment simEnv;
-  slope.addVelocity({-100, 0});
-  slope.addAngV(-0.2);
+  // slope.addVelocity({-1000, 00});
+  // slope.rotate(-0.2);
+  // slope.addAngV(-0.5);
   simEnv.addPolygon(floor, false);
   simEnv.addPolygon(leftWall, false);
   simEnv.addPolygon(slope, false);
@@ -123,12 +124,12 @@ int main() {
   // simEnv.addPolygon(c4);
   // simEnv.addPolygon(t9);
   // simEnv.addPolygon(t8);
-  s1.setFrictionCoef(1e12);
+  s1.setFrictionCoef(6);
   s1.addPos({0, -5});
   // simEnv.addPolygon(s1);
-  // s1.addPos({95, 110.0001});
+  s1.addPos({95, 110.0001});
   // simEnv.addPolygon(s1);
-  for (int i = 0; i < 0; i++) {
+  for (int i = 0; i < 5; i++) {
     // s1.rotate(M_PI / 4);
     s1.translate({0, 170});
     simEnv.addPolygon(s1);
