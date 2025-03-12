@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/src/Core/AssignEvaluator.h>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -45,10 +45,51 @@ physics::collision::Collision::Collision(env::bodies::Polygon& p1, int subP1I,
     : p1(p1), p2(p2), n(n.normalized()), manifold(manifold),
       refEdgePI(refEdgePI), subP1I(subP1I), subP2I(subP2I),
       accNormalImpulse(manifold.size()), accPseudoImpulse(manifold.size()),
-      accTangentImpulse(manifold.size()) {}
+      accTangentImpulse(manifold.size()),
+      restitutionCoeff(
+          std::min(p1.getResitutionCoef(), p2.getResitutionCoef())),
+      frictionCoeff(std::sqrt(p1.getFrictionCoef() * p2.getFrictionCoef())) {}
+//////////////////////////////GETTERS//////////////////////////////
+void physics::collision::Collision::findTargetVel() {
+  targetVel.clear();
+  const Eigen::Matrix2Xd& vs = p1.getGlobalVertices();
+  const std::vector<int>& subP = p1.getConvexDecomp()[getSubP1I()];
+  for (int c = 0; c < getManifold().size(); c++) {
+    Eigen::Vector2d maniPoint = getManifold()[c]; // Contact point position.
+    Eigen::Vector2d r2 =
+        maniPoint - p2.getCentroid(); // Contact point on second polygon
+                                      // relative to centroid.
+    Eigen::Vector2d r1 =
+        utils::geo::projectPoints(maniPoint - vs.col(subP[refEdgePI[0]]),
+                                  vs.col(subP[refEdgePI[1]]) -
+                                      vs.col(subP[refEdgePI[0]]))
+            .col(0) +
+        vs.col(subP[refEdgePI[0]]) -
+        p1.getCentroid(); // Contact point on first polygon relative
+                          // to centroid.
+    Eigen::Vector2d vRel =
+        (p2.getVelocity() + Eigen::Vector2d{-r2.y(), r2.x()} * p2.getAngV()) -
+        (p1.getVelocity() + Eigen::Vector2d{-r1.y(), r1.x()} * p1.getAngV());
+    targetVel.push_back(-vRel.dot(n) * restitutionCoeff);
+  }
+}
+
 //////////////////////////////GETTERS//////////////////////////////
 env::bodies::Polygon& physics::collision::Collision::getFirstPolygon() {
   return p1;
+}
+////////////////////////////////////////////////////////////
+const std::vector<double>& physics::collision::Collision::getTargetVel() const {
+  return targetVel;
+}
+////////////////////////////////////////////////////////////
+double physics::collision::Collision::getFrictionCoeff() const {
+  return frictionCoeff;
+}
+
+////////////////////////////////////////////////////////////
+double physics::collision::Collision::getRestitutionCoeff() const {
+  return restitutionCoeff;
 }
 
 ////////////////////////////////////////////////////////////
@@ -231,12 +272,11 @@ void physics::collision::Collision::setNormalImpulse(
 ////////////////////////////////////////////////////////////
 void physics::collision::Collision::addTangentImpulse(double impulse,
                                                       int contactPoint) {
-  double fricCoeff = std::sqrt(p1.getFrictionCoef() * p2.getFrictionCoef());
   double normalImpulse = std::abs(getAccNormalImpulse()[contactPoint]);
   if (contactPoint < this->accTangentImpulse.size()) {
-    this->accTangentImpulse[contactPoint] =
-        std::clamp(this->accTangentImpulse[contactPoint] + impulse,
-                   -fricCoeff * normalImpulse, fricCoeff * normalImpulse);
+    this->accTangentImpulse[contactPoint] = std::clamp(
+        this->accTangentImpulse[contactPoint] + impulse,
+        -frictionCoeff * normalImpulse, frictionCoeff * normalImpulse);
   }
 }
 ////////////////////////////////////////////////////////////

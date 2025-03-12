@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Polygon.hpp"
+#include "env/bodies/Polygon.hpp"
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 
 namespace env::bodies {
 class Square : public Polygon {

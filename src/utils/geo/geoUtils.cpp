@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <optional>
 

@@ -2,7 +2,6 @@
 
 #include "physics/forces/Force.hpp"
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <unordered_map>
 #include <vector>
 
@@ -17,7 +16,7 @@ public:
   Polygon(const Eigen::Matrix2Xd& vertices, double rot = 0, double angV = 0,
           const Eigen::Vector2d velocity = Eigen::Vector2d{0, 0},
           double density = 1, double restitutionCoef = 0,
-          double frictionCoef = 1, int id = -1);
+          double frictionCoef = 1, bool stationary = false, int id = -1, int tag = -1);
 
   /**
    * @brief Copy constructor.
@@ -200,6 +199,19 @@ public:
   void setId(int id);
 
   /**
+   * @brief Gets tag of polygon. Different from id in that it is never used by the simulation.
+   *
+   * @return Polygon tag.
+   */
+  int getTag() const;
+
+  /**
+   * @brief Sets tag of polygon.
+   * @param tag Polygon tag.
+   */
+  void setTag(int tag);
+
+  /**
    * @brief Adds a force influencing the polygon.
    *
    * @param source Type of force applied.
@@ -290,6 +302,20 @@ public:
   double getResitutionCoef() const;
 
   /**
+   * @brief Gets stationary status of polygon.
+   *
+   * @return Whether the polygon is unaffected by gravity.
+   */
+  double isStationary() const;
+
+  /**
+   * @brief Sets stationary status of polygon.
+   *
+   * @param stat Whether the polygon is unaffected by gravity.
+   */
+  void setStationary(bool stat);
+
+  /**
    * @brief Set friction coefficient.
    *
    * @param frictionCoef Friction coefficient.
@@ -341,6 +367,8 @@ private:
   double moment;        //< Moment of inertia of the polygon about its centroid.
   double restitutionCoef; //< Coefficient of resitution of the object.
   double frictionCoef;    //< Coefficient of friction of the object.
+  bool stationary;        //< Whether the polygon is unaffected by gravity.
+  int tag; //< Can get set by the user and is never used in the simulation.
 
   /**
    * @brief Finds the centroid of the polygon.

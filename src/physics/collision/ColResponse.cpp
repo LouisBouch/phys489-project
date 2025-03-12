@@ -6,9 +6,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/DiagonalMatrix.h>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <memory>
 
@@ -23,7 +22,8 @@ physics::collision::ColResponse::ColResponse(int nbIterations, int nbPosIt,
 
 ////////////////////////////////////////////////////////////
 double physics::collision::ColResponse::findImpulseMagnitude(
-    Collision& collision, const Eigen::Vector2d& n, int c, double targetVel) {
+    Collision& collision, const Eigen::Vector2d& n, int c, double targetVel,
+    double restitution) {
   // The impulse magnitudes.
   double impulse = 0;
   const std::array<int, 2>& refEdge = collision.getRefEdgePI();
@@ -53,8 +53,7 @@ double physics::collision::ColResponse::findImpulseMagnitude(
   Eigen::Vector2d vRel =
       (p2.getVelocity() + Eigen::Vector2d{-r2.y(), r2.x()} * p2.getAngV()) -
       (p1.getVelocity() + Eigen::Vector2d{-r1.y(), r1.x()} * p1.getAngV());
-
-  double nominator =
+  double numerator =
       targetVel - vRel.dot(n); // Nominator of the magnitude equation.
   double r1CrossN = utils::geo::cross2D(r1, n);
   double r2CrossN = utils::geo::cross2D(r2, n);
@@ -63,7 +62,7 @@ double physics::collision::ColResponse::findImpulseMagnitude(
                        (r2CrossN * r2CrossN) /
                            p2.getMoment(); // Also known as the effective mass.
 
-  impulse = nominator / denominator;
+  impulse = numerator / denominator;
   return impulse;
 }
 
@@ -80,7 +79,11 @@ void physics::collision::ColResponse::resolveCollisions(
   // }
   // std::mt19937 r(seed++);
   // std::shuffle(colsRandom.begin(), colsRandom.end(), r);
-  // Start by applying warm started impulses.
+  // Start by obtaining target velocities based on the restitution coefficients.
+  for (auto& colPair : collisions) {
+    colPair.second.get()->findTargetVel();
+  }
+  // Apply warm started impulses.
   for (auto& colPair : collisions) {
     warmStart(*colPair.second.get());
   }
@@ -88,11 +91,9 @@ void physics::collision::ColResponse::resolveCollisions(
   relaxFric = relaxVel = 1;
   for (int i = 0; i < nbVelIt; i++) {
     for (auto& colPair : collisions) {
-      // for (Collision* col : colsRandom) {
       enforceVelConstraint(*colPair.second.get());
     }
     for (auto& colPair : collisions) {
-      // for (Collision* col : colsRandom) {
       enforceFrictionConstraint(*colPair.second.get());
     }
     relaxVel *= relVelR;
@@ -130,8 +131,8 @@ void physics::collision::ColResponse::enforceVelConstraint(
   // std::vector<double> impulses = findImpulseMagnitudeCoupled(collision, n);
   // std::cout << "i1: " << impulses[0] << ", i2: " << impulses[1] << "\n";
   for (int c = 0; c < collision.getManifold().size(); c++) {
-    double deltaImp = findImpulseMagnitude(collision, n, c);
-    // double deltaImp = findImpulseMagnitude(collision, n,c);
+    double deltaImp =
+        findImpulseMagnitude(collision, n, c, collision.getTargetVel()[c]);
     double oldImp = collision.getAccNormalImpulse()[c];
     collision.addNormalImpulse(deltaImp, c);
     // Get actual impulse change after clamping.

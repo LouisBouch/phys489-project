@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -14,7 +13,8 @@
 env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
                               double angV, Eigen::Vector2d velocity,
                               double density, double restitutionCoef,
-                              double frictionCoef, int id)
+                              double frictionCoef, bool stationary, int id,
+                              int tag)
     : nbVertices(vertices.cols()), area(findArea(vertices)), colliding(false),
       perimeter(findPerimeter(vertices)), centroid(findCentroid(vertices)),
       rot(rot), angV(angV), velocity(velocity),
@@ -26,7 +26,7 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
       convexification(utils::geo::convexify(vertices, triangulation)),
       furthestVDist(findFurthestVDist()), density(density),
       mass(area * density), frictionCoef(frictionCoef),
-      restitutionCoef(restitutionCoef) {
+      restitutionCoef(restitutionCoef), stationary(stationary), tag(tag) {
   // Requires at least 3 vertices for valid polygon.
   if (nbVertices < 3) {
     throw std::invalid_argument(
@@ -40,7 +40,8 @@ env::bodies::Polygon::Polygon(const Eigen::Matrix2Xd& vertices, double rot,
 env::bodies::Polygon::Polygon(const Polygon& polygon)
     : Polygon(polygon.getLocalVertices(), polygon.rot, polygon.angV,
               polygon.velocity, polygon.density, polygon.restitutionCoef,
-              polygon.frictionCoef, polygon.id) {
+              polygon.frictionCoef, polygon.isStationary(), polygon.id,
+              polygon.tag) {
   translate(polygon.getCentroid());
   // Ensure forces are copied properly.
   for (const auto& force : polygon.forces) {
@@ -66,6 +67,12 @@ double env::bodies::Polygon::getArea() const { return area; }
 
 ////////////////////////////////////////////////////////////
 double env::bodies::Polygon::getPerimeter() const { return perimeter; }
+
+////////////////////////////////////////////////////////////
+double env::bodies::Polygon::isStationary() const { return stationary; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setStationary(bool stat) { stationary = stat; }
 
 ////////////////////////////////////////////////////////////
 const Eigen::Vector2d& env::bodies::Polygon::getCentroid() const {
@@ -213,6 +220,12 @@ int env::bodies::Polygon::getId() const { return id; }
 
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::setId(int id) { this->id = id; }
+
+////////////////////////////////////////////////////////////
+int env::bodies::Polygon::getTag() const { return tag; }
+
+////////////////////////////////////////////////////////////
+void env::bodies::Polygon::setTag(int tag) { this->tag = tag; }
 
 ////////////////////////////////////////////////////////////
 void env::bodies::Polygon::addForce(physics::forces::ForceSource source,

@@ -2,7 +2,6 @@
 
 #include "eigen3/Eigen/Dense"
 #include "env/bodies/Polygon.hpp"
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <optional>
 namespace physics::collision {
 class Collision {
@@ -164,6 +163,25 @@ public:
    */
   double findDifference(Collision& col);
 
+  /**
+   * @return Friction coefficient of the collision.
+   */
+  double getFrictionCoeff() const;
+
+  /**
+   * @return Restitution coefficient of the collision.
+   */
+  double getRestitutionCoeff() const;
+  /**
+   * @return Vector containing the target velocities for each contact point.
+   */
+  const std::vector<double>& getTargetVel() const;
+  /**
+   * Finds the target velocities of the collision manifold based on the
+   * restitution coefficient.
+   */
+  void findTargetVel();
+
 private:
   std::array<int, 2>
       refEdgePI; //< Indices of sub polygon vertices of edge where collision
@@ -186,8 +204,11 @@ private:
   std::vector<double> accPseudoImpulse; //< Total pseudo impulse applied to each
                                         // point on the manifold.
   std::vector<double>
-      accTangentImpulse; //< Total impulse applied to each
-                         // point on the manifold in the tangent direction.
+      accTangentImpulse;   //< Total impulse applied to each
+                           // point on the manifold in the tangent direction.
+  double frictionCoeff;    //< Friction coefficient of the collision.
+  double restitutionCoeff; //< Friction coefficient of the collision.
+  std::vector<double> targetVel; //< Target velocities of the contact manifold.
 
   /**
    * @brief Represents a collision between two polygons.

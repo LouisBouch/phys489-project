@@ -21,18 +21,17 @@ env::Environment::Environment(const Environment& env)
 env::Environment::~Environment() {}
 
 ////////////////////////////////////////////////////////////
-void env::Environment::addPolygon(bodies::Polygon& polygon, bool grav) {
+void env::Environment::addPolygon(bodies::Polygon& polygon) {
   polygons.push_back(polygon);
-  polygons.back().setId(curId);
+  bodies::Polygon& curPol = polygons.back();
+  curPol.setId(curId);
   // Remake the hashmap to prevent dangling reference after vector copy.
   for (int i = 0; i < polygons.size() - 1; i++) {
     polyById[polygons[i].getId()] = &polygons[i];
   }
-  polyById[curId] = &polygons.back();
-  if (grav) {
-    polygons.back().addForce(physics::forces::ForceSource::Gravity, {0, 0},
-                             {0, -1}, GRAV * polygon.getMass());
-  }
+  polyById[curId] = &curPol;
+  curPol.addForce(physics::forces::ForceSource::Gravity, {0, 0},
+                           {0, -1}, GRAV * polygon.getMass());
   curId++;
 }
 

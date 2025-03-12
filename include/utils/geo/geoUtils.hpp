@@ -1,7 +1,6 @@
 #pragma once
 
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <optional>
 namespace utils::geo {
 /**

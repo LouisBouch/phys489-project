@@ -5,7 +5,6 @@
 #include "ui/frame/SFMLWindow.hpp"
 #include <cmath>
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <limits>
 
@@ -97,26 +96,30 @@ int main() {
   env::bodies::Polygon floor(Eigen::MatrixXd{
       {0, 0 + 20}, {0, -100 + 20}, {1e6, -100 + 20}, {1e6, 0 + 20}}
                                  .transpose());
-  floor.setMass(std::numeric_limits<double>::max());
+  floor.setMass(std::numeric_limits<double>::infinity());
   env::bodies::Polygon leftWall(Eigen::MatrixXd{{0 + 20, 0 + 20},
                                                 {0 + 20, 1e6 + 20},
                                                 {-100 + 20, 1e6 + 20},
                                                 {-100 + 20, 0 + 20}}
                                     .transpose());
-  leftWall.setMass(std::numeric_limits<double>::max());
+  leftWall.setMass(std::numeric_limits<double>::infinity());
   env::bodies::Polygon slope(Eigen::MatrixXd{
       {1200 + 20, 0 + 50}, {2000 + 20, 0 + 50}, {2000 + 20, 300 + 50}}
                                  .transpose());
   slope.setFrictionCoef(6);
-  // slope.setMass(std::numeric_limits<double>::max());
+  // slope.setMass(std::numeric_limits<double>::infinity());
   // Create environment
   env::Environment simEnv;
   // slope.addVelocity({-1000, 00});
   // slope.rotate(-0.2);
   // slope.addAngV(-0.5);
-  simEnv.addPolygon(floor, false);
-  simEnv.addPolygon(leftWall, false);
-  simEnv.addPolygon(slope, false);
+  floor.setStationary(true);
+  floor.setRestitutionCoef(1);
+  simEnv.addPolygon(floor);
+  leftWall.setStationary(true);
+  simEnv.addPolygon(leftWall);
+  slope.setStationary(true);
+  simEnv.addPolygon(slope);
   // simEnv.addPolygon(t1);
   // simEnv.addPolygon(c1);
   // simEnv.addPolygon(c2);
@@ -132,12 +135,18 @@ int main() {
   for (int i = 0; i < 5; i++) {
     // s1.rotate(M_PI / 4);
     s1.translate({0, 170});
-    simEnv.addPolygon(s1);
+    // simEnv.addPolygon(s1);
   }
+  s1.addPos({195, -900});
+  s1.rotate(M_PI / 4+0.2);
+  s1.setRestitutionCoef(1);
+  // s1.setFrictionCoef(0);
+  simEnv.addPolygon(s1);
   // Create physics engine
   physics::PhysicsEngine engine(0.01);
   engine.setEnv(&simEnv);
-  engine.startSimLoop();
+  engine.setSaveSteps(true);
+  engine.startSimLoop(0.02);
 
   // Create window and configure renderer with environment
   ui::frame::SFMLWindow window(engine);

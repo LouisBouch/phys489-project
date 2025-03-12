@@ -1,15 +1,13 @@
 #pragma once
 #include "bodies/Polygon.hpp"
 #include "boundaries/Wall.hpp"
-#include "physics/collision/Collision.hpp"
 #include <cstdint>
-#include <functional>
 #include <mutex>
-#include <shared_mutex>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
-#define GRAV 500
+#define GRAV 100
 
 namespace env {
 class Environment {
@@ -42,9 +40,8 @@ public:
    * @brief Adds a polygon to the environment.
    *
    * @param polygon Polygon to introduce in simulation.
-   * @param grav Whether the shape is affected by gravity or not.
    */
-  void addPolygon(bodies::Polygon& polygon, bool grav = true);
+  void addPolygon(bodies::Polygon& polygon);
 
   /**
    * @brief Gets the polygon array. REQUIRES MANUAL UNLOCKING AFTER THE USER IS

@@ -4,7 +4,6 @@
 #include "physics/collision/ColDetector.hpp"
 #include "physics/collision/Collision.hpp"
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <memory>
 
 namespace physics::collision {
@@ -70,11 +69,14 @@ private:
    * @param c Contact point for which to find magnitude.
    * @param targetVel Target velocity of the constraint. (Positive value to pull
    * objects apart)
+   * @param resitution When not negative, overrides targetVel to be a fraction
+   * of the relative velocity at the contat point. Must be between 0 and 1.
    *
    * @return An impulse magnitude for the specified contact point.
    */
   double findImpulseMagnitude(Collision& collision, const Eigen::Vector2d& n,
-                              int c, double targetVel = 0);
+                              int c, double targetVel = 0,
+                              double restitution = -1);
   /**
    * @brief Given a collsion, find the impulse as a coupled system.
    *

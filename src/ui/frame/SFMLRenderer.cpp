@@ -12,7 +12,6 @@
 #include "physics/collision/Collision.hpp"
 #include <cmath>
 #include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <sstream>
 #include <string>

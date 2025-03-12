@@ -1,6 +1,5 @@
 #include "env/bodies/Square.hpp"
 #include "env/bodies/Polygon.hpp"
-#include <eigen3/Eigen/src/Core/Matrix.h>
 
 env::bodies::Square::Square()
     : Polygon(

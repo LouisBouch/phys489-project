@@ -85,4 +85,61 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # Because I build statically
-add_compile_definitions(SFML_STATIC)
+# add_compile_definitions(SFML_STATIC)
+
+############################################################
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  # Make a library that can be used outside the project
+  add_library(${PROJECT_NAME}_lib SHARED
+    src/ui/frame/SFMLWindow.cpp
+    src/ui/frame/SFMLRenderer.cpp
+    src/env/Environment.cpp
+    src/env/bodies/Polygon.cpp
+    src/env/bodies/Square.cpp
+    src/physics/PhysicsEngine.cpp
+    src/physics/forces/Force.cpp
+    src/physics/integrator.cpp
+    src/physics/collision/ColDetector.cpp
+    src/physics/collision/ColResponse.cpp
+    src/physics/collision/Collision.cpp
+    src/utils/geo/geoUtils.cpp
+    src/utils/geo/geoConvex.cpp
+    src/utils/DCEL/DCEL.cpp
+    src/utils/DCEL/Vertex.cpp
+    src/utils/DCEL/HalfEdge.cpp
+    src/utils/DCEL/Face.cpp
+  )
+
+  # Specify where the include and library directories are for SFML
+  target_include_directories(${PROJECT_NAME}_lib PRIVATE ${CMAKE_SOURCE_DIR}/../sfml3/source/include/)
+  target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_SOURCE_DIR}/include/)
+
+  # Add final dependency to build file
+  add_dependencies(${PROJECT_NAME}_lib CopyFonts)
+
+  # Link to specific libraries depending on compile mode (release / debug)
+  # Make it default to debug
+  target_link_directories(${PROJECT_NAME}_lib PRIVATE ${CMAKE_SOURCE_DIR}/../sfml3/build/releaseShared/lib/)
+  target_link_libraries(${PROJECT_NAME}_lib PRIVATE
+    sfml-graphics
+    sfml-window
+    sfml-system
+    sfml-network
+    sfml-audio
+  )
+
+  # Necessary for sfml to work
+  target_link_libraries(${PROJECT_NAME}_lib PRIVATE
+    X11
+    Xrandr
+    Xcursor
+    Xinerama
+    Xi
+    udev
+    GL
+    freetype
+  )
+endif()
+message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")

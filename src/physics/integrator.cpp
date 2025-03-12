@@ -3,8 +3,6 @@
 #include "physics/forces/Force.hpp"
 #include "utils/geo/geoUtils.hpp"
 #include <cmath>
-#include <complex>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 ////////////////////////////////////////////////////////////
 void physics::stepEnvironment(env::Environment& env, double dt) {
@@ -29,6 +27,10 @@ void physics::applyForces(env::Environment& env, double dt) {
         forcesMap = p.getForceSources();
     double r = 0.999; // Ratio of rotation lost every second.
     for (auto& force : forcesMap) {
+      // Don't apply gravity to statonary polygon.
+      if ((force.first == forces::ForceSource::Gravity) && p.isStationary()) {
+        continue;
+      }
       if (force.first == forces::ForceSource::NoRot) {
         r = 1; // Removes all spin.
         continue;

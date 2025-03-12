@@ -2,7 +2,7 @@
 #include "utils/DCEL/DCEL.hpp"
 #include "utils/DCEL/HalfEdge.hpp"
 #include "utils/geo/geoUtils.hpp"
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <list>
 #include <numeric>

@@ -12,7 +12,7 @@
 #include <SFML/Window/Event.hpp>
 #include <chrono>
 #include <cmath>
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <limits>
 #include <ratio>
