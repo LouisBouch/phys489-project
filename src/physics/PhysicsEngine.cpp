@@ -6,6 +6,7 @@
 #include <chrono>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
+#include <limits>
 #include <ostream>
 #include <fstream>
 #include <thread>
@@ -45,25 +46,29 @@ void physics::PhysicsEngine::stopSimLoop() { running = false; }
 ////////////////////////////////////////////////////////////
 nlohmann::json physics::PhysicsEngine::envToJson() {
   nlohmann::json step;
-  step["time"].push_back(env->getTotalTime() / 1e6);
+  step["time"] = env->getTotalTime() / 1e6;
 
   // Push each polygon in the json.
   std::vector<env::bodies::Polygon> pols = env->getPolygons();
   for (env::bodies::Polygon& pol : pols) {
     nlohmann::json polygonJson;
+    // Don't include wall and such.
+    if (pol.getDensity() == std::numeric_limits<double>::infinity()) {
+      continue;
+    }
 
     // Store centroid.
     const Eigen::Vector2d& cent = pol.getCentroid();
     polygonJson["centroid"] = {cent.x(), cent.y()};
 
     // Store global vertices.
-    nlohmann::json globalVJ = nlohmann::json::array();
-    const Eigen::Matrix2Xd& gs = pol.getGlobalVertices();
-    for (int v = 0; v < gs.cols(); v++) {
-      Eigen::Vector2d ve = gs.col(v);
-      globalVJ.push_back({ve.x(), ve.y()});
-    }
-    polygonJson["global_vertices"] = globalVJ;
+    // nlohmann::json globalVJ = nlohmann::json::array();
+    // const Eigen::Matrix2Xd& gs = pol.getGlobalVertices();
+    // for (int v = 0; v < gs.cols(); v++) {
+    //   Eigen::Vector2d ve = gs.col(v);
+    //   globalVJ.push_back({ve.x(), ve.y()});
+    // }
+    // polygonJson["global_vertices"] = globalVJ;
 
     // Store rotation.
     polygonJson["rotation"] = pol.getRotation();
@@ -135,6 +140,7 @@ void physics::PhysicsEngine::simLoop(double maxTime, std::string filename) {
   }
 
   file << run.dump(2);
+  std::cout << "Saved to: " << filename << "\n";
   file.close();
 }
 

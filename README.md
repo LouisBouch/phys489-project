@@ -1,8 +1,12 @@
 # PHYS 489 project
+
 ## Dependencies
+
 - [SFML3](https://www.sfml-dev.org/download/sfml/3.0.0/)(See how to install in the instructions below)
 - [eigen](https://eigen.tuxfamily.org)(pacman -S eigen)
+
 ## Instructions to build the project (With linux)
+
 - Clone the repo into a directory
 - Create a sibling directory to the cloned repository named "sfml3"
 - Add a directory inside "sfml3" called "build"
@@ -14,3 +18,6 @@
 - Run 'make'
 - Finally, run './SIS' to execute the binary
 
+## Documentation
+
+- Although there is documentation, setting up an environment and running it is not intuitive. The best way to set up something would be to modify the Main.cpp file.

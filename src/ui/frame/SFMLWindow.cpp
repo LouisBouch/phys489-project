@@ -1,5 +1,6 @@
 #include "ui/frame/SFMLWindow.hpp"
 #include "SFML/Graphics/Drawable.hpp"
+#include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Keyboard.hpp"
 #include "SFML/Window/Mouse.hpp"
